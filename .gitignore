@@ -1,5 +1,9 @@
+*.DS_Store
+*~
+*.code-workspace
 *.o
 .deps
+log/
 Makefile
 Makefile.in
 aclocal.m4

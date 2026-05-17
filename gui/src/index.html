@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <title>RK Firmware Updater</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <h1>RK Firmware Updater</h1>
+          <p id="deviceLine" class="muted">Detecting...</p>
+        </div>
+        <button id="rebootButton" class="secondary" type="button" disabled>Reboot</button>
+      </header>
+
+      <section class="panel controls">
+        <div class="section-header">
+          <h2>Update</h2>
+          <div class="quick-update">
+            <button id="quickUpdateButton" class="warning" type="button">Latest loader + image</button>
+            <p>Updates the loader first, then the image, using the latest online files.</p>
+          </div>
+        </div>
+
+        <div class="update-grid">
+          <article class="update-card">
+            <label class="check-row">
+              <input id="updateLoader" type="checkbox" checked>
+              <span>Loader</span>
+            </label>
+            <div class="segmented" role="group" aria-label="Source loader">
+              <label><input type="radio" name="loaderSource" value="online" checked><span>Online</span></label>
+              <label><input type="radio" name="loaderSource" value="local"><span>Local</span></label>
+            </div>
+            <div class="file-row">
+              <input id="loaderPath" type="text" readonly placeholder="No local file">
+              <button id="chooseLoader" class="secondary" type="button">Choose</button>
+            </div>
+            <p id="loaderUrl" class="asset-url"></p>
+          </article>
+
+          <article class="update-card">
+            <label class="check-row">
+              <input id="updateImage" type="checkbox" checked>
+              <span>Image</span>
+            </label>
+            <div class="segmented" role="group" aria-label="Source image">
+              <label><input type="radio" name="imageSource" value="online" checked><span>Online</span></label>
+              <label><input type="radio" name="imageSource" value="local"><span>Local</span></label>
+            </div>
+            <div class="file-row">
+              <input id="imagePath" type="text" readonly placeholder="No local file">
+              <button id="chooseImage" class="secondary" type="button">Choose</button>
+            </div>
+            <p id="imageUrl" class="asset-url"></p>
+          </article>
+        </div>
+
+        <div class="action-row">
+          <button id="startButton" class="primary" type="button">Start</button>
+          <div class="progress-block">
+            <div class="progress-label">
+              <span id="progressLabel">Ready</span>
+              <span id="progressValue">0%</span>
+            </div>
+            <progress id="progressBar" value="0" max="100"></progress>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel log-panel">
+        <div class="section-header">
+          <h2>Log</h2>
+          <span id="statusText" class="status-pill">Ready</span>
+        </div>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

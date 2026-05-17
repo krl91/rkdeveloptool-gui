@@ -1,0 +1,60 @@
+{
+  "name": "rkdeveloptool-gui",
+  "version": "0.1.0",
+  "description": "Cross-platform Electron GUI for rkdeveloptool firmware updates.",
+  "author": "OpenIPC contributors",
+  "license": "GPL-2.0-only",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js && node --check src/lib.js && node --check src/simulationRunner.js && node --check src/toolRunner.js && node --check src/windowFactory.js && node --check scripts/stage-rkdeveloptool.js && node --check tests/lib.test.js && node --check tests/integration.test.js && node --check tests/layout.test.js && node --check tests/simulation.test.js && node --check tests/windowFactory.test.js && node --check tests/fixtures/mock-rkdeveloptool.js",
+    "test": "node --test tests/*.test.js",
+    "coverage": "node --test --experimental-test-coverage tests/*.test.js",
+    "stage:rkdeveloptool": "node scripts/stage-rkdeveloptool.js",
+    "dist": "npm run stage:rkdeveloptool && electron-builder",
+    "dist:mac": "npm run stage:rkdeveloptool && electron-builder --mac",
+    "dist:dir": "npm run stage:rkdeveloptool && electron-builder --dir"
+  },
+  "devDependencies": {
+    "electron": "^42.1.0",
+    "electron-builder": "^26.8.1"
+  },
+  "build": {
+    "appId": "org.openipc.rkdeveloptool-gui",
+    "productName": "RK Firmware Updater",
+    "files": [
+      "src/**/*",
+      "config/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "bin",
+        "to": "bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "mac": {
+      "hardenedRuntime": true,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.inherit.plist",
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  }
+}

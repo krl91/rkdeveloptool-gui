@@ -1,0 +1,15 @@
+{
+  "rkdeveloptoolPath": "",
+  "commandPrefix": [],
+  "releasePageUrl": "https://github.com/OpenIPC/sbc-groundstations/releases/tag/buildroot-snapshot",
+  "releaseApiUrl": "https://api.github.com/repos/OpenIPC/sbc-groundstations/releases/tags/buildroot-snapshot",
+  "loader": {
+    "assetName": "runcam_wifilink_u-boot.bin",
+    "url": "https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_u-boot.bin"
+  },
+  "image": {
+    "assetName": "runcam_wifilink_sdcard.img",
+    "url": "https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_sdcard.img",
+    "lba": 0
+  }
+}

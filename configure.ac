@@ -21,6 +21,10 @@ AC_ARG_ENABLE([standalone],
 	AS_HELP_STRING([--enable-standalone],
 		[link libusb statically when libusb-1.0.a is available]))
 
+AC_ARG_ENABLE([gui],
+	AS_HELP_STRING([--enable-gui],
+		[build the Electron GUI package when running make]))
+
 AC_CANONICAL_HOST
 case "$host_os" in
 	freebsd*)
@@ -54,6 +58,19 @@ AS_IF([test "x$enable_standalone" = "xyes"], [
 ], [
 	PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0])
 ])
+
+AC_CHECK_PROGS([NPM], [npm npm.cmd], [npm])
+AS_IF([test "x$enable_gui" = "xyes"], [
+	AS_IF([command -v "$NPM" >/dev/null 2>&1], [], [
+		AC_MSG_ERROR([--enable-gui requires npm. Install Node.js and npm, then rerun configure.])
+	])
+	AS_IF([test -f "$srcdir/gui/package.json"], [], [
+		AC_MSG_ERROR([--enable-gui requested but gui/package.json was not found])
+	])
+	AC_MSG_NOTICE([GUI build enabled: make will also package the Electron application])
+])
+AM_CONDITIONAL([BUILD_GUI], [test "x$enable_gui" = "xyes"])
+AC_SUBST([NPM])
 
 AC_CONFIG_FILES([Makefile])
 

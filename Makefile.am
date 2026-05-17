@@ -17,5 +17,38 @@ rkdeveloptool_SOURCES = main.cpp \
 	gpt.h
 rkdeveloptool_LDADD = $(LIBUSB1_LIBS)
 
-clean-local::
+GUI_BINARY = gui/bin/rkdeveloptool$(EXEEXT)
+
+if BUILD_GUI
+all-local: gui-dist
+endif
+
+.PHONY: gui gui-dist gui-dist-dir gui-test gui-clean
+
+gui: gui-dist
+
+$(GUI_BINARY): rkdeveloptool$(EXEEXT)
+	$(MKDIR_P) gui/bin
+	cp -f ./rkdeveloptool$(EXEEXT) $(GUI_BINARY)
+
+gui-dist: $(GUI_BINARY)
+	cd gui && $(NPM) install
+	cd gui && $(NPM) run dist
+
+gui-dist-dir: $(GUI_BINARY)
+	cd gui && $(NPM) install
+	cd gui && $(NPM) run dist:dir
+
+gui-test:
+	cd gui && $(NPM) install
+	cd gui && $(NPM) run check
+	cd gui && $(NPM) test
+	cd gui && $(NPM) run coverage
+
+gui-clean:
+	if test -d gui/dist; then find gui/dist -name .DS_Store -delete; chmod -R u+w gui/dist; fi
+	if test -d gui/log; then find gui/log -name .DS_Store -delete; chmod -R u+w gui/log; fi
+	-rm -fr gui/dist gui/log gui/bin/rkdeveloptool gui/bin/rkdeveloptool.exe
+
+clean-local:: gui-clean
 	rm -fr log
