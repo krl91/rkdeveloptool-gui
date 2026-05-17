@@ -15,6 +15,11 @@ AC_PROG_CXXCPP
 AC_PROG_MAKE_SET
 AC_PROG_INSTALL
 AC_PROG_LN_S
+PKG_PROG_PKG_CONFIG
+
+AC_ARG_ENABLE([standalone],
+	AS_HELP_STRING([--enable-standalone],
+		[link libusb statically when libusb-1.0.a is available]))
 
 AC_CANONICAL_HOST
 case "$host_os" in
@@ -31,7 +36,24 @@ case "$host_os" in
 esac
 
 
-PKG_CHECK_MODULES(LIBUSB1,libusb-1.0)
+AS_IF([test "x$enable_standalone" = "xyes"], [
+	PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0])
+	libusb_static_libdir=`$PKG_CONFIG --variable=libdir libusb-1.0`
+	libusb_static_archive="$libusb_static_libdir/libusb-1.0.a"
+	AS_IF([test -f "$libusb_static_archive"], [], [
+		AC_MSG_ERROR([standalone build requested but libusb static archive was not found: $libusb_static_archive])
+	])
+	LIBUSB1_LIBS=`$PKG_CONFIG --libs --static libusb-1.0 | sed "s|-lusb-1.0|$libusb_static_archive|"`
+	case "$host_os" in
+		mingw*|msys*)
+			LDFLAGS="$LDFLAGS -static -static-libgcc -static-libstdc++"
+			AC_MSG_NOTICE([standalone MinGW build enabled: linking GCC and C++ runtimes statically])
+			;;
+	esac
+	AC_MSG_NOTICE([standalone build enabled: linking libusb from $libusb_static_archive])
+], [
+	PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0])
+])
 
 AC_CONFIG_FILES([Makefile])
 
