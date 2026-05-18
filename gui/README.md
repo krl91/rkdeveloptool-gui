@@ -240,5 +240,6 @@ The firmware assets are not embedded. The app downloads them on demand from the
 configured release URLs and verifies SHA256 before flashing.
 
 USB permissions and drivers are still OS-specific. Linux users should install
-udev rules or run with suitable privileges. Windows users need a
-libusb-compatible driver such as WinUSB for the Rockusb device.
+udev rules or run with suitable privileges. On Windows, if the updater does
+not detect the ground station, use Zadig from https://zadig.akeo.ie/ to select
+the Rockusb/Maskrom/Loader USB entry and assign the WinUSB driver.

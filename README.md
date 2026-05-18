@@ -288,8 +288,21 @@ Linux:
 
 Windows:
 
-	The Rockusb device must use a libusb-compatible driver such as WinUSB.
-	Zadig can install WinUSB for the connected Rockusb device.
+	Windows includes WinUSB, but it may not use it automatically for the
+	ground station USB entry.
+
+	If the updater does not detect the device:
+
+	1. Connect the ground station in Maskrom/Loader mode.
+	2. Download and run Zadig: https://zadig.akeo.ie/
+	3. In Zadig, enable Options -> List All Devices if the entry is hidden.
+	4. Select the Rockusb/Maskrom/Loader USB entry for the ground station.
+	5. Choose WinUSB as the target driver.
+	6. Click Install Driver or Replace Driver.
+	7. Restart RK Firmware Updater.
+
+	Be careful to select the ground station USB entry, not a keyboard, mouse,
+	storage device, or another unrelated USB device.
 
 macOS:
 
