@@ -173,8 +173,7 @@ pacman -S --needed git wget autoconf automake make pkgconf \
   mingw-w64-ucrt-x86_64-gcc \
   mingw-w64-ucrt-x86_64-pkgconf \
   mingw-w64-ucrt-x86_64-libusb \
-  mingw-w64-ucrt-x86_64-nodejs \
-  mingw-w64-ucrt-x86_64-npm
+  mingw-w64-ucrt-x86_64-nodejs
 
 echo $MSYSTEM
 gcc --version
@@ -202,11 +201,11 @@ usually in the wrong MSYS2 shell. The UCRT64 package names only work from the
 UCRT64 shell. Run `echo $MSYSTEM`; it must print `UCRT64`. If it prints
 `CLANG64`, close the terminal and open **MSYS2 UCRT64**.
 
-If `npm` is not found when building the GUI, install Node.js and npm in the
-same UCRT64 shell:
+If `npm` is not found when building the GUI, install Node.js in the same UCRT64
+shell. The MSYS2 Node.js package also provides npm:
 
 ```bash
-pacman -S --needed mingw-w64-ucrt-x86_64-nodejs mingw-w64-ucrt-x86_64-npm
+pacman -S --needed mingw-w64-ucrt-x86_64-nodejs
 hash -r
 node --version
 npm --version

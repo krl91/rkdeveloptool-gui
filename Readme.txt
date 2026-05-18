@@ -99,8 +99,7 @@ Windows, from the MSYS2 UCRT64 shell:
 		mingw-w64-ucrt-x86_64-gcc \
 		mingw-w64-ucrt-x86_64-pkgconf \
 		mingw-w64-ucrt-x86_64-libusb \
-		mingw-w64-ucrt-x86_64-nodejs \
-		mingw-w64-ucrt-x86_64-npm
+		mingw-w64-ucrt-x86_64-nodejs
 	echo $MSYSTEM
 	gcc --version
 	node --version
@@ -297,10 +296,10 @@ Windows/MSYS2:
 
 		-bash: npm: command not found
 
-	install Node.js and npm in the same UCRT64 shell:
+	install Node.js in the same UCRT64 shell. The MSYS2 Node.js package also
+	provides npm:
 
-		pacman -S --needed mingw-w64-ucrt-x86_64-nodejs \
-			mingw-w64-ucrt-x86_64-npm
+		pacman -S --needed mingw-w64-ucrt-x86_64-nodejs
 		hash -r
 		node --version
 		npm --version
