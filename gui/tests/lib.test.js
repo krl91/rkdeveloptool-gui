@@ -76,8 +76,9 @@ test('executableName selects the expected filename per platform', () => {
 });
 
 test('findRkdeveloptool prefers explicit path, then packaged resources', () => {
+  const packagedTool = path.join('/resources', 'bin', 'rkdeveloptool');
   const fakeFs = {
-    existsSync: (candidate) => candidate === '/resources/bin/rkdeveloptool'
+    existsSync: (candidate) => candidate === packagedTool
   };
 
   assert.equal(findRkdeveloptool({ rkdeveloptoolPath: '/custom/tool' }), '/custom/tool');
@@ -88,7 +89,7 @@ test('findRkdeveloptool prefers explicit path, then packaged resources', () => {
     guiRoot: '/gui',
     repoRoot: '/repo',
     cwd: '/cwd'
-  }), '/resources/bin/rkdeveloptool');
+  }), packagedTool);
 });
 
 test('findRkdeveloptool falls back to PATH executable name', () => {
