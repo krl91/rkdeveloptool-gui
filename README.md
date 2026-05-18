@@ -307,10 +307,15 @@ Run:
 Common example:
 
 	sudo ./rkdeveloptool db RKXXLoader.bin
-	sudo ./rkdeveloptool wl 0x8000 kernel.img
+	sudo ./rkdeveloptool wl 0 full_sdcard.img
 	sudo ./rkdeveloptool rd
 
-In this example, 0x8000 is the base sector of the target partition.
+For OpenIPC `sbc-groundstations` full images such as
+`runcam_wifilink_sdcard.img`, use LBA `0`. The GUI default configuration uses
+the same value.
+
+Only use another LBA when you intentionally write a partition-specific image
+and you know the exact base sector for that target partition.
 
 
 Troubleshooting
