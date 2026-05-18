@@ -178,6 +178,8 @@ pacman -S --needed git wget autoconf automake make pkgconf \
 
 echo $MSYSTEM
 gcc --version
+node --version
+npm --version
 git clone https://github.com/krl91/rkdeveloptool-gui.git
 cd rkdeveloptool-gui
 
@@ -199,6 +201,16 @@ If `./configure` reports `no acceptable C compiler found in $PATH`, you are
 usually in the wrong MSYS2 shell. The UCRT64 package names only work from the
 UCRT64 shell. Run `echo $MSYSTEM`; it must print `UCRT64`. If it prints
 `CLANG64`, close the terminal and open **MSYS2 UCRT64**.
+
+If `npm` is not found when building the GUI, install Node.js and npm in the
+same UCRT64 shell:
+
+```bash
+pacman -S --needed mingw-w64-ucrt-x86_64-nodejs mingw-w64-ucrt-x86_64-npm
+hash -r
+node --version
+npm --version
+```
 
 The firmware assets are not embedded. The app downloads them on demand from the
 configured release URLs and verifies SHA256 before flashing.

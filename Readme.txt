@@ -42,6 +42,8 @@ Windows:
 
 	echo $MSYSTEM
 	gcc --version
+	node --version
+	npm --version
 	git clone https://github.com/krl91/rkdeveloptool-gui.git
 	cd rkdeveloptool-gui
 	autoreconf -i
@@ -101,6 +103,8 @@ Windows, from the MSYS2 UCRT64 shell:
 		mingw-w64-ucrt-x86_64-npm
 	echo $MSYSTEM
 	gcc --version
+	node --version
+	npm --version
 	git clone https://github.com/krl91/rkdeveloptool-gui.git
 	cd rkdeveloptool-gui
 	autoreconf -i
@@ -288,3 +292,15 @@ Windows/MSYS2:
 			mingw-w64-clang-x86_64-clang \
 			mingw-w64-clang-x86_64-pkgconf \
 			mingw-w64-clang-x86_64-libusb
+
+	If npm is not found when building the GUI:
+
+		-bash: npm: command not found
+
+	install Node.js and npm in the same UCRT64 shell:
+
+		pacman -S --needed mingw-w64-ucrt-x86_64-nodejs \
+			mingw-w64-ucrt-x86_64-npm
+		hash -r
+		node --version
+		npm --version
