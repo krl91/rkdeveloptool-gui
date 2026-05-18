@@ -47,6 +47,9 @@ Quick Install: Command-Line Tool
 
 macOS:
 
+	Install Homebrew first if the brew command is not available:
+	https://brew.sh/
+
 	brew install automake autoconf libusb pkg-config git wget
 	git clone https://github.com/krl91/rkdeveloptool-gui.git
 	cd rkdeveloptool-gui
@@ -106,6 +109,9 @@ Prerequisites:
 	- Install Node.js and npm.
 
 macOS:
+
+	Install Homebrew first if the brew command is not available:
+	https://brew.sh/
 
 	brew install automake autoconf libusb pkg-config git wget node
 	git clone https://github.com/krl91/rkdeveloptool-gui.git

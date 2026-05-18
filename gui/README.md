@@ -143,6 +143,10 @@ application for the current OS.
 
 ### macOS
 
+Install Homebrew first if the `brew` command is not available:
+
+https://brew.sh/
+
 ```bash
 brew install automake autoconf libusb pkg-config git wget node
 
