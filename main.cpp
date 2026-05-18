@@ -3357,7 +3357,6 @@ int main(int argc, char* argv[])
 {
 	CRKScan *pScan = NULL;
 	int ret;
-	char szProgramProcPath[100];
 	char szProgramDir[256];
 	string strLogDir,strConfigFile;
 	struct stat statBuf;
@@ -3365,6 +3364,7 @@ int main(int argc, char* argv[])
 	g_ConfigItemVec.clear();
 
 #ifndef __MINGW32__
+	char szProgramProcPath[100];
 	snprintf(szProgramProcPath, sizeof(szProgramProcPath), "/proc/%d/exe", getpid());
 	if (readlink(szProgramProcPath, szProgramDir, 256) == -1)
 		strcpy(szProgramDir, ".");
