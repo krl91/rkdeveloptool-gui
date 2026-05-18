@@ -23,9 +23,11 @@ if BUILD_GUI
 all-local: gui-dist
 endif
 
-.PHONY: gui gui-dist gui-dist-dir gui-test gui-clean
+.PHONY: gui gui-package gui-dist gui-dist-dir gui-test gui-clean
 
 gui: gui-dist
+
+gui-package: gui-dist
 
 $(GUI_BINARY): rkdeveloptool$(EXEEXT)
 	$(MKDIR_P) gui/bin

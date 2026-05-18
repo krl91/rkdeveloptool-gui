@@ -142,6 +142,13 @@ Useful GUI make targets:
 	make gui
 		Build the final Electron package, same as npm run dist.
 
+	make gui-package
+		Build the final Electron package. This is an alias for make gui.
+
+	make gui-dist
+		Build the final Electron package. This is the lower-level target used
+		by make gui and make gui-package.
+
 	make gui-dist-dir
 		Build a faster unpacked Electron package, same as npm run dist:dir.
 
