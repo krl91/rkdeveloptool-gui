@@ -5,6 +5,7 @@ const test = require('node:test');
 
 const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
 const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
+const renderer = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer.js'), 'utf8');
 
 test('layout allows the window to scroll when content is taller than the viewport', () => {
   assert.match(css, /body\s*\{[\s\S]*overflow:\s*auto;/);
@@ -35,4 +36,19 @@ test('renderer document declares a restrictive content security policy', () => {
   assert.match(html, /http-equiv="Content-Security-Policy"/);
   assert.match(html, /default-src 'self'/);
   assert.match(html, /object-src 'none'/);
+});
+
+test('custom configuration banner is present and hidden by default', () => {
+  assert.match(html, /id="configBanner"\s+class="config-banner"\s+hidden/);
+  assert.match(css, /\.config-banner\s*\{[\s\S]*background:\s*var\(--warning-bg\);/);
+});
+
+test('renderer protects reboot against duplicate clicks', () => {
+  assert.match(renderer, /let rebootInFlight = false;/);
+  assert.match(renderer, /if \(rebootInFlight\) return;/);
+  assert.match(renderer, /function updateRebootButton\(\)/);
+});
+
+test('renderer falls back safely when no radio input is selected', () => {
+  assert.match(renderer, /return radio \? radio\.value : 'online';/);
 });

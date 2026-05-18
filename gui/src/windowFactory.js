@@ -1,4 +1,4 @@
-async function createMainWindow({ BrowserWindow, preloadPath, indexPath }) {
+async function createMainWindow({ BrowserWindow, preloadPath, indexPath, shouldBlockClose = () => false, onBlockedClose = () => {} }) {
   const window = new BrowserWindow({
     width: 980,
     height: 720,
@@ -14,6 +14,11 @@ async function createMainWindow({ BrowserWindow, preloadPath, indexPath }) {
     }
   });
 
+  window.on('close', (event) => {
+    if (!shouldBlockClose()) return;
+    event.preventDefault();
+    onBlockedClose();
+  });
   window.once('ready-to-show', () => window.show());
   await window.loadFile(indexPath);
   if (!window.isVisible()) {

@@ -2,14 +2,21 @@ const childProcess = require('node:child_process');
 const path = require('node:path');
 const { commandParts, progressFromLine } = require('./lib');
 
-function createToolRunner({ toolPath, config, emit }) {
+function mappedProgressValue(progress, options = {}) {
+  const scale = Number.isFinite(options.progressScale) ? options.progressScale : 1;
+  const offset = Number.isFinite(options.progressOffset) ? options.progressOffset : 0;
+  return Math.max(0, Math.min(100, Math.round(offset + (progress * scale))));
+}
+
+function createToolRunner({ toolPath, config, searchPaths = [], emit, allowUnsafeCommandPrefix = false }) {
   return function runTool(args, options = {}) {
     return new Promise((resolve, reject) => {
-      const { command, args: fullArgs } = commandParts(toolPath, args, config);
+      const { command, args: fullArgs } = commandParts(toolPath, args, config, { allowUnsafeCommandPrefix });
       emit('log', { line: `$ ${[command, ...fullArgs].join(' ')}` });
       const child = childProcess.spawn(command, fullArgs, {
         cwd: path.dirname(toolPath),
-        windowsHide: true
+        windowsHide: true,
+        shell: false
       });
 
       let stdout = '';
@@ -22,14 +29,21 @@ function createToolRunner({ toolPath, config, emit }) {
           emit('log', { line });
           const progress = progressFromLine(line);
           if (progress !== null) {
-            emit('progress', { label: options.progressLabel || 'Writing', value: progress });
+            emit('progress', { label: options.progressLabel || 'Writing', value: mappedProgressValue(progress, options) });
           }
         }
       };
 
       child.stdout.on('data', (chunk) => handleChunk(chunk, 'stdout'));
       child.stderr.on('data', (chunk) => handleChunk(chunk, 'stderr'));
-      child.on('error', reject);
+      child.on('error', (error) => {
+        if (error.code === 'ENOENT') {
+          const checked = searchPaths.length > 0 ? searchPaths.join(', ') : 'packaged resources, development bundle, repository root';
+          reject(new Error(`rkdeveloptool executable was not found. Checked: ${checked}; then system PATH command: ${toolPath}`));
+          return;
+        }
+        reject(error);
+      });
       child.on('close', (code) => {
         if (code === 0) {
           resolve({ stdout, stderr });
@@ -47,5 +61,6 @@ function createToolRunner({ toolPath, config, emit }) {
 }
 
 module.exports = {
-  createToolRunner
+  createToolRunner,
+  mappedProgressValue
 };

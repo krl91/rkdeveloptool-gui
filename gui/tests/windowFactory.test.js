@@ -20,6 +20,11 @@ function createFakeBrowserWindow({ emitReadyDuringLoad }) {
       this.handlers[eventName] = handler;
     }
 
+    on(eventName, handler) {
+      this.events.push(`on:${eventName}`);
+      this.handlers[eventName] = handler;
+    }
+
     async loadFile(filePath) {
       this.events.push(`loadFile:${filePath}`);
       if (emitReadyDuringLoad) {
@@ -51,6 +56,7 @@ test('main window is shown when ready-to-show fires during loadFile', async () =
   assert.equal(window.visible, true);
   assert.equal(instances.length, 1);
   assert.deepEqual(window.events, [
+    'on:close',
     'once:ready-to-show',
     'loadFile:/app/index.html',
     'show'
@@ -71,8 +77,29 @@ test('main window is shown after loadFile if ready-to-show is missed', async () 
 
   assert.equal(window.visible, true);
   assert.deepEqual(window.events, [
+    'on:close',
     'once:ready-to-show',
     'loadFile:/app/index.html',
     'show'
   ]);
+});
+
+test('main window blocks close while a flash operation is busy', async () => {
+  const { FakeBrowserWindow } = createFakeBrowserWindow({ emitReadyDuringLoad: false });
+  let prevented = false;
+  let warned = false;
+  const window = await createMainWindow({
+    BrowserWindow: FakeBrowserWindow,
+    preloadPath: '/app/preload.js',
+    indexPath: '/app/index.html',
+    shouldBlockClose: () => true,
+    onBlockedClose: () => { warned = true; }
+  });
+
+  window.handlers.close({
+    preventDefault: () => { prevented = true; }
+  });
+
+  assert.equal(prevented, true);
+  assert.equal(warned, true);
 });

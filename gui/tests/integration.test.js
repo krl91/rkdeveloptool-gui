@@ -5,7 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const { isNoDeviceOutput, parseDevices, plannedUpdateKinds, simulatedDevice } = require('../src/lib');
-const { createToolRunner } = require('../src/toolRunner');
+const { createToolRunner, mappedProgressValue } = require('../src/toolRunner');
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rk-gui-int-'));
@@ -20,6 +20,7 @@ function createMockRunner(mode = 'one') {
     config: {
       commandPrefix: [process.execPath]
     },
+    allowUnsafeCommandPrefix: true,
     emit: (type, payload) => events.push({ type, payload })
   });
 
@@ -109,4 +110,39 @@ test('integration runner surfaces rkdeveloptool failures with command output', a
   const mock = createMockRunner('fail');
   await assert.rejects(() => mock.run(['db', '/tmp/loader.bin']), /forced mock failure/);
   assert.deepEqual(mock.calls(), ['db /tmp/loader.bin']);
+});
+
+test('integration runner explains missing rkdeveloptool executable', async () => {
+  const events = [];
+  const runner = createToolRunner({
+    toolPath: 'rkdeveloptool-not-installed-for-test',
+    config: {},
+    searchPaths: ['/app/resources/bin/rkdeveloptool', '/app/gui/bin/rkdeveloptool'],
+    emit: (type, payload) => events.push({ type, payload })
+  });
+
+  await assert.rejects(() => runner(['ld']), /Checked: \/app\/resources\/bin\/rkdeveloptool, \/app\/gui\/bin\/rkdeveloptool; then system PATH command/);
+});
+
+test('integration runner maps phase progress to global progress', async () => {
+  const mock = createMockRunner('one');
+  await mock.run(['wl', '0', '/tmp/image.img'], {
+    progressLabel: 'Image 2/2',
+    progressOffset: 50,
+    progressScale: 0.5
+  });
+
+  const progressValues = mock.events
+    .filter((event) => event.type === 'progress')
+    .map((event) => event.payload);
+  assert.deepEqual(progressValues, [
+    { label: 'Image 2/2', value: 51 },
+    { label: 'Image 2/2', value: 75 },
+    { label: 'Image 2/2', value: 100 }
+  ]);
+});
+
+test('mappedProgressValue clamps progress to the progress bar range', () => {
+  assert.equal(mappedProgressValue(50, { progressOffset: 25, progressScale: 0.5 }), 50);
+  assert.equal(mappedProgressValue(500, { progressOffset: 0, progressScale: 1 }), 100);
 });

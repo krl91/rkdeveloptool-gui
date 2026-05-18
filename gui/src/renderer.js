@@ -17,11 +17,20 @@ const elements = {
   statusText: document.getElementById('statusText'),
   log: document.getElementById('log')
 };
+elements.configBanner = document.getElementById('configBanner');
+elements.configBannerText = document.getElementById('configBannerText');
 
 let busy = false;
+let rebootAvailable = false;
+let rebootInFlight = false;
 
 function selectedRadio(name) {
-  return document.querySelector(`input[name="${name}"]:checked`).value;
+  const radio = document.querySelector(`input[name="${name}"]:checked`);
+  return radio ? radio.value : 'online';
+}
+
+function updateRebootButton() {
+  elements.rebootButton.disabled = busy || rebootInFlight || !rebootAvailable;
 }
 
 function setBusy(value) {
@@ -29,7 +38,7 @@ function setBusy(value) {
   for (const button of document.querySelectorAll('button')) {
     button.disabled = value;
   }
-  elements.rebootButton.disabled = value;
+  updateRebootButton();
   updateSourceControls();
 }
 
@@ -90,7 +99,8 @@ async function runUpdate(options) {
   try {
     await window.rkGui.startUpdate(options);
     setStatus('Done', 'ok');
-    elements.rebootButton.disabled = false;
+    rebootAvailable = true;
+    updateRebootButton();
     await proposeReboot();
   } catch (error) {
     setStatus('Error', 'error');
@@ -99,6 +109,9 @@ async function runUpdate(options) {
 }
 
 async function proposeReboot() {
+  if (rebootInFlight) return;
+  rebootInFlight = true;
+  updateRebootButton();
   try {
     const confirmed = await window.rkGui.confirmReboot();
     if (!confirmed) return;
@@ -107,6 +120,9 @@ async function proposeReboot() {
   } catch (error) {
     setStatus('Error', 'error');
     appendLog(error.message);
+  } finally {
+    rebootInFlight = false;
+    updateRebootButton();
   }
 }
 
@@ -118,7 +134,8 @@ window.rkGui.onEvent((event) => {
   if (event.type === 'done') {
     appendLog(event.message);
     setStatus('Done', 'ok');
-    elements.rebootButton.disabled = false;
+    rebootAvailable = true;
+    updateRebootButton();
   }
 });
 
@@ -148,12 +165,18 @@ elements.quickUpdateButton.addEventListener('click', () => {
 });
 
 elements.rebootButton.addEventListener('click', async () => {
+  if (rebootInFlight) return;
+  rebootInFlight = true;
+  updateRebootButton();
   setStatus('Rebooting...');
   try {
     await window.rkGui.reboot();
   } catch (error) {
     setStatus('Error', 'error');
     appendLog(error.message);
+  } finally {
+    rebootInFlight = false;
+    updateRebootButton();
   }
 });
 
@@ -166,5 +189,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   elements.loaderUrl.textContent = state.config.loader.url;
   elements.imageUrl.textContent = state.config.image.url;
+  if (state.configInfo?.overrides?.length > 0) {
+    elements.configBanner.hidden = false;
+    elements.configBannerText.textContent = [
+      `Config: ${state.configInfo.overrides.join(', ')}`,
+      `Release API: ${state.configInfo.source.releaseApiHost || 'not configured'}`,
+      `Loader: ${state.configInfo.source.loaderHost || 'not configured'}`,
+      `Image: ${state.configInfo.source.imageHost || 'not configured'}`
+    ].join(' | ');
+  }
   updateSourceControls();
 });

@@ -6,18 +6,23 @@ const path = require('node:path');
 const {
   findChecksumAsset,
   findMatchingAsset,
-  findRkdeveloptool: findBundledRkdeveloptool,
+  findRkdeveloptoolWithDiagnostics,
   githubApiFromReleasePage,
   describeUpdatePlan,
   isNoDeviceOutput,
-  loadConfigFiles,
+  loadConfigFilesWithSources,
+  normalizeLocalPath,
   normalizeFileKind,
+  normalizeTimeoutMs,
   normalizeUpdateOptions,
   parseDevices,
   plannedUpdateKinds,
+  publicConfig,
   resolveSha256FromRelease,
   simulatedDevice,
-  sha256File
+  sha256File,
+  sourceSummary,
+  validateLocalPathSelection
 } = require('./lib');
 const { createSimulationRunner } = require('./simulationRunner');
 const { createToolRunner } = require('./toolRunner');
@@ -26,11 +31,15 @@ const { createMainWindow: createBrowserMainWindow } = require('./windowFactory')
 let mainWindow = null;
 let appState = {
   config: null,
+  configOverrides: [],
   device: null,
   rkdeveloptoolPath: null,
+  rkdeveloptoolSearchPaths: [],
   simulation: false,
-  busy: false
+  busy: false,
+  allowedLocalPaths: new Set()
 };
+let quitWarningOpen = false;
 
 function loadConfig() {
   const defaultConfigPath = path.join(__dirname, '..', 'config', 'default.json');
@@ -40,11 +49,11 @@ function loadConfig() {
     path.join(app.getPath('userData'), 'rkdeveloptool-gui.config.json'),
     path.join(process.resourcesPath || '', 'rkdeveloptool-gui.config.json')
   ].filter(Boolean);
-  return loadConfigFiles(defaultConfigPath, candidates);
+  return loadConfigFilesWithSources(defaultConfigPath, candidates);
 }
 
 function findRkdeveloptool(config) {
-  return findBundledRkdeveloptool(config, {
+  return findRkdeveloptoolWithDiagnostics(config, {
     resourcesPath: process.resourcesPath,
     guiRoot: path.join(__dirname, '..'),
     repoRoot: path.join(__dirname, '..', '..'),
@@ -65,9 +74,37 @@ function runTool(args, options = {}) {
   const runner = createToolRunner({
     toolPath: appState.rkdeveloptoolPath,
     config: appState.config,
+    searchPaths: appState.rkdeveloptoolSearchPaths,
     emit
   });
   return runner(args, options);
+}
+
+function timeoutSignal(timeoutMs) {
+  if (!timeoutMs) return undefined;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return {
+    signal: controller.signal,
+    clear: () => clearTimeout(timeout)
+  };
+}
+
+async function fetchWithTimeout(url, options = {}) {
+  const timeout = timeoutSignal(options.timeoutMs);
+  try {
+    return await fetch(url, {
+      headers: { 'User-Agent': 'rkdeveloptool-gui' },
+      signal: timeout?.signal
+    });
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Network request timed out after ${options.timeoutMs} ms: ${url}`);
+    }
+    throw error;
+  } finally {
+    timeout?.clear();
+  }
 }
 
 async function detectSingleDevice() {
@@ -84,7 +121,8 @@ async function detectSingleDevice() {
 }
 
 async function fetchJson(url) {
-  const response = await fetch(url, { headers: { 'User-Agent': 'rkdeveloptool-gui' } });
+  const timeoutMs = normalizeTimeoutMs(appState.config?.network?.metadataTimeoutMs, 300000);
+  const response = await fetchWithTimeout(url, { timeoutMs });
   if (!response.ok) {
     throw new Error(`GitHub request failed (${response.status})`);
   }
@@ -92,7 +130,8 @@ async function fetchJson(url) {
 }
 
 async function fetchText(url) {
-  const response = await fetch(url, { headers: { 'User-Agent': 'rkdeveloptool-gui' } });
+  const timeoutMs = normalizeTimeoutMs(appState.config?.network?.metadataTimeoutMs, 300000);
+  const response = await fetchWithTimeout(url, { timeoutMs });
   if (!response.ok) {
     throw new Error(`Checksum download failed (${response.status})`);
   }
@@ -148,7 +187,9 @@ async function downloadAndVerify(asset) {
   const hash = crypto.createHash('sha256');
 
   emit('status', { message: `Downloading ${asset.name}...` });
-  const response = await fetch(asset.url, { headers: { 'User-Agent': 'rkdeveloptool-gui' } });
+  emit('log', { line: `Download source ${asset.name}: ${asset.url}` });
+  const timeoutMs = normalizeTimeoutMs(appState.config?.network?.downloadTimeoutMs, 7200000);
+  const response = await fetchWithTimeout(asset.url, { timeoutMs });
   if (!response.ok || !response.body) {
     throw new Error(`Download failed (${response.status})`);
   }
@@ -191,9 +232,22 @@ async function downloadAndVerify(asset) {
     emit('log', { line: `SHA256 OK ${asset.name}: ${actual}` });
     return destination;
   } catch (error) {
-    writer.destroy();
-    fs.rmSync(tempDestination, { force: true });
+    await cleanupTempDownload(writer, tempDestination);
     throw error;
+  }
+}
+
+async function cleanupTempDownload(writer, tempDestination) {
+  if (!writer.destroyed && !writer.closed) {
+    await new Promise((resolve) => {
+      writer.once('close', resolve);
+      writer.destroy();
+    });
+  }
+  try {
+    fs.rmSync(tempDestination, { force: true });
+  } catch {
+    // Best-effort cleanup; Windows may keep a recently destroyed file busy.
   }
 }
 
@@ -202,9 +256,7 @@ async function prepareFile(kind, source, localPath) {
     const asset = await resolveOnlineAsset(kind);
     return downloadAndVerify(asset);
   }
-  if (!localPath) {
-    throw new Error(`No local file selected for ${kind}.`);
-  }
+  validateLocalPathSelection(kind, localPath, appState.allowedLocalPaths);
   const digest = await sha256File(localPath);
   emit('log', { line: `Local SHA256 ${path.basename(localPath)}: ${digest}` });
   return localPath;
@@ -221,17 +273,23 @@ async function runUpdate(options) {
   try {
     const plan = plannedUpdateKinds(options);
 
-    for (const kind of plan) {
+    for (const [index, kind] of plan.entries()) {
+      const progressOptions = {
+        progressLabel: `${kind === 'loader' ? 'Loader' : 'Image'} ${index + 1}/${plan.length}`,
+        progressOffset: (index / plan.length) * 100,
+        progressScale: 1 / plan.length
+      };
+
       if (kind === 'loader') {
         const loaderPath = await prepareFile('loader', options.loaderSource, options.loaderPath);
         emit('status', { message: 'Writing loader...' });
-        await runTool(['db', loaderPath], { progressLabel: 'Loader' });
+        await runTool(['db', loaderPath], progressOptions);
       }
 
       if (kind === 'image') {
         const imagePath = await prepareFile('image', options.imageSource, options.imagePath);
         emit('status', { message: 'Writing image...' });
-        await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], { progressLabel: 'Image' });
+        await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
       }
     }
 
@@ -248,13 +306,19 @@ async function createMainWindow() {
   mainWindow = await createBrowserMainWindow({
     BrowserWindow,
     preloadPath: path.join(__dirname, 'preload.js'),
-    indexPath: path.join(__dirname, 'index.html')
+    indexPath: path.join(__dirname, 'index.html'),
+    shouldBlockClose: () => appState.busy,
+    onBlockedClose: warnOperationInProgress
   });
 }
 
 ipcMain.handle('app:getInitialState', () => ({
   device: appState.device,
-  config: appState.config,
+  config: publicConfig(appState.config),
+  configInfo: {
+    overrides: appState.configOverrides,
+    source: sourceSummary(appState.config)
+  },
   platform: os.platform(),
   simulation: appState.simulation
 }));
@@ -269,12 +333,15 @@ ipcMain.handle('app:chooseFile', async (_event, kind) => {
     filters
   });
   if (result.canceled || result.filePaths.length === 0) return '';
-  return result.filePaths[0];
+  const filePath = result.filePaths[0];
+  appState.allowedLocalPaths.add(normalizeLocalPath(filePath));
+  return filePath;
 });
 
 ipcMain.handle('app:confirmUpdate', async (_event, options) => {
   const normalizedOptions = normalizeUpdateOptions(options);
   const lines = describeUpdatePlan(normalizedOptions);
+  const sources = sourceSummary(appState.config);
   const result = await dialog.showMessageBox(mainWindow, {
     type: 'warning',
     buttons: ['Start', 'Cancel'],
@@ -286,6 +353,10 @@ ipcMain.handle('app:confirmUpdate', async (_event, options) => {
       ...lines,
       '',
       'The loader is always updated before the image.',
+      `Release API host: ${sources.releaseApiHost || 'not configured'}`,
+      `Loader host: ${sources.loaderHost || 'not configured'}`,
+      `Image host: ${sources.imageHost || 'not configured'}`,
+      appState.configOverrides.length > 0 ? `Custom config loaded from: ${appState.configOverrides.join(', ')}` : 'Using packaged default configuration.',
       appState.simulation ? 'Simulation mode: no real device will be flashed.' : 'Do not disconnect the device during the operation.'
     ].join('\n')
   });
@@ -327,8 +398,12 @@ ipcMain.handle('app:reboot', async () => {
 
 app.whenReady().then(async () => {
   try {
-    appState.config = loadConfig();
-    appState.rkdeveloptoolPath = findRkdeveloptool(appState.config);
+    const loadedConfig = loadConfig();
+    appState.config = loadedConfig.config;
+    appState.configOverrides = loadedConfig.overrides;
+    const tool = findRkdeveloptool(appState.config);
+    appState.rkdeveloptoolPath = tool.path;
+    appState.rkdeveloptoolSearchPaths = tool.searchPaths;
     const devices = await detectSingleDevice();
     if (devices.length === 0) {
       const result = await dialog.showMessageBox({
@@ -347,6 +422,7 @@ app.whenReady().then(async () => {
       appState.device = simulatedDevice();
       appState.simulation = true;
       await createMainWindow();
+      announceConfigSources();
       emit('log', { line: 'Simulation mode: no real device will be flashed.' });
       return;
     }
@@ -363,6 +439,7 @@ app.whenReady().then(async () => {
     appState.device = devices[0];
     appState.simulation = false;
     await createMainWindow();
+    announceConfigSources();
   } catch (error) {
     await dialog.showMessageBox({
       type: 'error',
@@ -374,6 +451,48 @@ app.whenReady().then(async () => {
   }
 });
 
+function announceConfigSources() {
+  const sources = sourceSummary(appState.config);
+  if (appState.configOverrides.length > 0) {
+    emit('log', { line: `Custom config loaded from: ${appState.configOverrides.join(', ')}` });
+  }
+  emit('log', { line: `Release API host: ${sources.releaseApiHost || 'not configured'}` });
+  emit('log', { line: `Loader host: ${sources.loaderHost || 'not configured'}` });
+  emit('log', { line: `Image host: ${sources.imageHost || 'not configured'}` });
+}
+
+async function warnOperationInProgress() {
+  if (quitWarningOpen) return;
+  quitWarningOpen = true;
+  const options = {
+    type: 'warning',
+    buttons: ['OK'],
+    title: 'Operation in progress',
+    message: 'A flash operation is running.',
+    detail: 'Closing now could interrupt the flash operation. Wait until the operation completes.'
+  };
+  try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      await dialog.showMessageBox(mainWindow, options);
+      return;
+    }
+    await dialog.showMessageBox(options);
+  } finally {
+    quitWarningOpen = false;
+  }
+}
+
+app.on('before-quit', (event) => {
+  if (appState.busy) {
+    event.preventDefault();
+    warnOperationInProgress();
+  }
+});
+
 app.on('window-all-closed', () => {
+  if (appState.busy) {
+    warnOperationInProgress();
+    return;
+  }
   app.quit();
 });

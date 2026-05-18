@@ -13,17 +13,26 @@ const {
   findChecksumAsset,
   findMatchingAsset,
   findRkdeveloptool,
+  findRkdeveloptoolWithDiagnostics,
   githubApiFromReleasePage,
   isNoDeviceOutput,
   isSimulatedDevice,
   loadConfigFiles,
+  loadConfigFilesWithSources,
+  normalizeLocalPath,
   normalizeFileKind,
+  normalizeTimeoutMs,
   normalizeUpdateOptions,
   parseChecksumText,
   parseDevices,
   plannedUpdateKinds,
   progressFromLine,
+  publicConfig,
+  readJson,
   resolveSha256FromRelease,
+  sourceSummary,
+  validateCommandPrefix,
+  validateLocalPathSelection,
   sha256File
 } = require('../src/lib');
 
@@ -69,6 +78,21 @@ test('loadConfigFiles applies overrides in declaration order', () => {
   assert.equal(config.image.lba, 2048);
 });
 
+test('loadConfigFilesWithSources reports applied override files', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rk-gui-config-sources-'));
+  const defaults = path.join(tmp, 'default.json');
+  const override = path.join(tmp, 'override.json');
+  const missing = path.join(tmp, 'missing.json');
+
+  fs.writeFileSync(defaults, JSON.stringify({ loader: { url: 'default' } }));
+  fs.writeFileSync(override, JSON.stringify({ loader: { url: 'custom' } }));
+
+  const loaded = loadConfigFilesWithSources(defaults, [missing, override]);
+  assert.equal(loaded.config.loader.url, 'custom');
+  assert.equal(loaded.defaultConfigPath, defaults);
+  assert.deepEqual(loaded.overrides, [override]);
+});
+
 test('executableName selects the expected filename per platform', () => {
   assert.equal(executableName('win32'), 'rkdeveloptool.exe');
   assert.equal(executableName('darwin'), 'rkdeveloptool');
@@ -104,6 +128,27 @@ test('findRkdeveloptool falls back to PATH executable name', () => {
   }), 'rkdeveloptool.exe');
 });
 
+test('findRkdeveloptoolWithDiagnostics reports searched paths and PATH fallback', () => {
+  const fakeFs = { existsSync: () => false };
+  const result = findRkdeveloptoolWithDiagnostics({}, {
+    fsModule: fakeFs,
+    platform: 'linux',
+    resourcesPath: '/resources',
+    guiRoot: '/gui',
+    repoRoot: '/repo',
+    cwd: '/cwd'
+  });
+
+  assert.equal(result.path, 'rkdeveloptool');
+  assert.equal(result.usesPathFallback, true);
+  assert.deepEqual(result.searchPaths, [
+    path.join('/resources', 'bin', 'rkdeveloptool'),
+    path.join('/gui', 'bin', 'rkdeveloptool'),
+    path.join('/repo', 'rkdeveloptool'),
+    path.join('/cwd', 'rkdeveloptool')
+  ]);
+});
+
 test('commandParts supports direct commands and privilege prefixes', () => {
   assert.deepEqual(commandParts('/bin/rkdeveloptool', ['ld'], {}), {
     command: '/bin/rkdeveloptool',
@@ -113,6 +158,16 @@ test('commandParts supports direct commands and privilege prefixes', () => {
     command: 'sudo',
     args: ['-n', '/bin/rkdeveloptool', 'rd']
   });
+});
+
+test('commandParts rejects unsafe command prefixes by default', () => {
+  assert.throws(() => commandParts('/bin/rkdeveloptool', ['ld'], {
+    commandPrefix: ['/bin/sh', '-c']
+  }), /Unsupported commandPrefix executable/);
+  assert.throws(() => commandParts('/bin/rkdeveloptool', ['ld'], {
+    commandPrefix: ['sudo', '-E']
+  }), /Unsupported commandPrefix argument/);
+  assert.deepEqual(validateCommandPrefix(['pkexec']), ['pkexec']);
 });
 
 test('parseDevices reads rkdeveloptool ld output and ignores unrelated lines', () => {
@@ -142,9 +197,27 @@ test('parseDevices reads rkdeveloptool ld output and ignores unrelated lines', (
   ]);
 });
 
+test('parseDevices supports LocationID variants seen across rkdeveloptool builds', () => {
+  const devices = parseDevices([
+    'DevNo=1 Vid=0x2207,Pid=0x330c,LocationID=1-2:1.0 Loader',
+    'DevNo=2 Vid=0x2207,Pid=0x320a,LocationID=usb-3.4 Maskrom'
+  ].join('\n'));
+
+  assert.deepEqual(devices.map((device) => ({
+    devNo: device.devNo,
+    locationId: device.locationId,
+    mode: device.mode
+  })), [
+    { devNo: 1, locationId: '1-2:1.0', mode: 'Loader' },
+    { devNo: 2, locationId: 'usb-3.4', mode: 'Maskrom' }
+  ]);
+});
+
 test('isNoDeviceOutput recognizes rkdeveloptool ld no-device output', () => {
   assert.equal(isNoDeviceOutput('not found any devices!'), true);
   assert.equal(isNoDeviceOutput('NOT FOUND ANY DEVICES!'), true);
+  assert.equal(isNoDeviceOutput('No devices found'), true);
+  assert.equal(isNoDeviceOutput('Did not find any rockusb device, please plug device in!'), true);
   assert.equal(isNoDeviceOutput('Found too many rockusb devices'), false);
 });
 
@@ -256,6 +329,52 @@ test('describeUpdatePlan explains exactly what will happen before flashing', () 
     '1. Update the loader from the latest online file',
     '2. Write the image from the local file'
   ]);
+});
+
+test('local file paths must come from the file picker allow-list', () => {
+  const selected = normalizeLocalPath('/tmp/loader.bin');
+  const allowed = new Set([selected]);
+
+  assert.equal(validateLocalPathSelection('loader', '/tmp/loader.bin', allowed), '/tmp/loader.bin');
+  assert.throws(() => validateLocalPathSelection('loader', '', allowed), /No local file selected/);
+  assert.throws(() => validateLocalPathSelection('image', '/tmp/other.img', allowed), /file picker/);
+});
+
+test('publicConfig only exposes renderer-visible values', () => {
+  assert.deepEqual(publicConfig({
+    rkdeveloptoolPath: '/secret/tool',
+    commandPrefix: ['sudo', '-n'],
+    loader: { url: 'https://loader.example/file.bin', assetName: 'loader.bin' },
+    image: { url: 'https://image.example/file.img', assetName: 'image.img', lba: 0 }
+  }), {
+    loader: { url: 'https://loader.example/file.bin' },
+    image: { url: 'https://image.example/file.img', lba: 0 }
+  });
+});
+
+test('sourceSummary extracts configured source hosts for confirmation UI', () => {
+  assert.deepEqual(sourceSummary({
+    releaseApiUrl: 'https://api.github.com/repos/OpenIPC/sbc-groundstations/releases/tags/buildroot-snapshot',
+    loader: { url: 'https://github.com/OpenIPC/sbc-groundstations/releases/download/tag/loader.bin' },
+    image: { url: 'https://mirror.example/images/sdcard.img' }
+  }), {
+    releaseApiHost: 'api.github.com',
+    loaderHost: 'github.com',
+    imageHost: 'mirror.example'
+  });
+});
+
+test('normalizeTimeoutMs keeps large configurable values and rejects invalid ones', () => {
+  assert.equal(normalizeTimeoutMs(7200000, 300000), 7200000);
+  assert.equal(normalizeTimeoutMs('60000', 300000), 60000);
+  assert.equal(normalizeTimeoutMs(-1, 300000), 300000);
+  assert.equal(normalizeTimeoutMs('bad', 300000), 300000);
+});
+
+test('default config keeps network timeouts configurable and large', () => {
+  const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
+  assert.equal(config.network.metadataTimeoutMs, 300000);
+  assert.equal(config.network.downloadTimeoutMs, 7200000);
 });
 
 test('sha256File returns the expected digest for local firmware files', async () => {

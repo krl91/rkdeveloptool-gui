@@ -19,11 +19,12 @@ You need:
 
 Platform notes:
 
-- **Windows:** if the application does not detect the ground station, Windows
-  may not be using the right USB driver for the Rockusb/Maskrom/Loader entry.
-  Use the free Zadig tool from https://zadig.akeo.ie/ to select that USB entry
-  and assign the WinUSB driver. WinUSB is included with Windows; Zadig only
-  changes which driver Windows uses for the selected USB entry.
+- **Windows:** usually, no extra software is required. First connect the
+  ground station in Maskrom/Loader mode and start the updater. If the
+  application still does not detect it, use the free Zadig tool from
+  https://zadig.akeo.ie/ to select the Rockusb/Maskrom/Loader USB entry and
+  assign the WinUSB driver. WinUSB is included with Windows; Zadig only changes
+  which driver Windows uses for the selected USB entry.
 - **Linux:** install a udev rule or run the application with suitable USB
   privileges.
 - **macOS:** no separate driver is usually required, but the application may
@@ -43,8 +44,8 @@ style follows your operating system, but the choices are the same:
 
 If one device is detected, the main window opens directly.
 
-On Windows, if the device is connected in Maskrom/Loader mode but the
-application still does not detect it:
+On Windows, use Zadig only if the device is connected in Maskrom/Loader mode
+but the application still does not detect it:
 
 1. Download Zadig from https://zadig.akeo.ie/
 2. Start Zadig.
@@ -157,7 +158,22 @@ RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 ```
 
 Configurable values include the GitHub release page, GitHub API URL, loader
-URL, image URL, asset names, and image LBA.
+URL, image URL, asset names, image LBA, and network timeouts.
+
+Default network timeouts are deliberately long:
+
+```json
+{
+  "network": {
+    "metadataTimeoutMs": 300000,
+    "downloadTimeoutMs": 7200000
+  }
+}
+```
+
+If a custom configuration file is loaded, the main window shows a warning
+banner and the confirmation dialog lists the active source hosts before the
+update starts.
 
 ## Related Documentation
 

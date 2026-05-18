@@ -274,8 +274,17 @@ directory, in the Electron user data directory, or by setting:
 	RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 
 The firmware release page URL, GitHub API URL, loader URL, image URL, asset
-names, and image LBA are configurable. Online downloads are verified with
-SHA256 before flashing.
+names, image LBA, and network timeouts are configurable. Online downloads are
+verified with SHA256 before flashing.
+
+Default network timeout values are intentionally large:
+
+	network.metadataTimeoutMs = 300000
+	network.downloadTimeoutMs = 7200000
+
+If a custom configuration file is loaded, the GUI shows a permanent warning
+banner and the confirmation dialog lists the active release, loader, and image
+source hosts before any flash operation starts.
 
 
 USB Notes
@@ -291,7 +300,10 @@ Windows:
 	Windows includes WinUSB, but it may not use it automatically for the
 	ground station USB entry.
 
-	If the updater does not detect the device:
+	Usually, no extra Windows software is required. First connect the ground
+	station in Maskrom/Loader mode and start RK Firmware Updater.
+
+	Use Zadig only if the updater does not detect the device:
 
 	1. Connect the ground station in Maskrom/Loader mode.
 	2. Download and run Zadig: https://zadig.akeo.ie/

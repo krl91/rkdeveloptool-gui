@@ -4,6 +4,11 @@ const path = require('node:path');
 
 const VALID_FILE_KINDS = new Set(['loader', 'image']);
 const VALID_SOURCES = new Set(['online', 'local']);
+const ALLOWED_COMMAND_PREFIXES = {
+  sudo: new Set(['-n']),
+  pkexec: new Set(),
+  doas: new Set(['-n'])
+};
 
 function deepMerge(base, override) {
   const output = { ...base };
@@ -22,13 +27,23 @@ function readJson(filePath, fsModule = fs) {
 }
 
 function loadConfigFiles(defaultConfigPath, candidates, fsModule = fs) {
+  return loadConfigFilesWithSources(defaultConfigPath, candidates, fsModule).config;
+}
+
+function loadConfigFilesWithSources(defaultConfigPath, candidates, fsModule = fs) {
   let config = readJson(defaultConfigPath, fsModule);
+  const overrides = [];
   for (const candidate of candidates.filter(Boolean)) {
     if (fsModule.existsSync(candidate)) {
       config = deepMerge(config, readJson(candidate, fsModule));
+      overrides.push(candidate);
     }
   }
-  return config;
+  return {
+    config,
+    defaultConfigPath,
+    overrides
+  };
 }
 
 function executableName(platform = process.platform) {
@@ -36,29 +51,67 @@ function executableName(platform = process.platform) {
 }
 
 function findRkdeveloptool(config, options = {}) {
-  if (config.rkdeveloptoolPath) {
-    return config.rkdeveloptoolPath;
-  }
+  return findRkdeveloptoolWithDiagnostics(config, options).path;
+}
 
-  const fsModule = options.fsModule || fs;
+function rkdeveloptoolSearchPaths(options = {}) {
   const name = executableName(options.platform);
-  const candidates = [
+  return Array.from(new Set([
     path.join(options.resourcesPath || '', 'bin', name),
     path.join(options.guiRoot || '', 'bin', name),
     path.join(options.repoRoot || '', name),
     path.join(options.cwd || process.cwd(), name)
-  ].filter((candidate) => candidate !== path.join('bin', name));
+  ].filter((candidate) => candidate !== path.join('bin', name))));
+}
+
+function findRkdeveloptoolWithDiagnostics(config, options = {}) {
+  if (config.rkdeveloptoolPath) {
+    return {
+      path: config.rkdeveloptoolPath,
+      searchPaths: [config.rkdeveloptoolPath],
+      usesPathFallback: false
+    };
+  }
+
+  const fsModule = options.fsModule || fs;
+  const name = executableName(options.platform);
+  const candidates = rkdeveloptoolSearchPaths(options);
 
   for (const candidate of candidates) {
     if (fsModule.existsSync(candidate)) {
-      return candidate;
+      return {
+        path: candidate,
+        searchPaths: candidates,
+        usesPathFallback: false
+      };
     }
   }
-  return name;
+  return {
+    path: name,
+    searchPaths: candidates,
+    usesPathFallback: true
+  };
 }
 
-function commandParts(toolPath, args, config = {}) {
-  const prefix = Array.isArray(config.commandPrefix) ? config.commandPrefix : [];
+function validateCommandPrefix(prefix, options = {}) {
+  if (!Array.isArray(prefix) || prefix.length === 0) return [];
+  if (options.allowUnsafeCommandPrefix) return prefix;
+
+  const command = path.basename(prefix[0]);
+  const allowedArgs = ALLOWED_COMMAND_PREFIXES[command];
+  if (!allowedArgs) {
+    throw new Error(`Unsupported commandPrefix executable: ${prefix[0]}`);
+  }
+  for (const arg of prefix.slice(1)) {
+    if (!allowedArgs.has(arg)) {
+      throw new Error(`Unsupported commandPrefix argument for ${command}: ${arg}`);
+    }
+  }
+  return prefix;
+}
+
+function commandParts(toolPath, args, config = {}, options = {}) {
+  const prefix = validateCommandPrefix(config.commandPrefix, options);
   if (prefix.length > 0) {
     return { command: prefix[0], args: [...prefix.slice(1), toolPath, ...args] };
   }
@@ -69,7 +122,7 @@ function parseDevices(output) {
   return output
     .split(/\r?\n/)
     .map((line) => {
-      const match = line.match(/DevNo=(\d+)\s+Vid=0x([0-9a-fA-F]+),Pid=0x([0-9a-fA-F]+),LocationID=([0-9a-zA-Z]+)\s+(.+)/);
+      const match = line.match(/DevNo=(\d+)\s+Vid=0x([0-9a-fA-F]+),Pid=0x([0-9a-fA-F]+),LocationID=([^\s]+)\s+(.+)/);
       if (!match) return null;
       return {
         devNo: Number(match[1]),
@@ -213,7 +266,60 @@ function isSimulatedDevice(device) {
 }
 
 function isNoDeviceOutput(output) {
-  return /not found any devices/i.test(String(output || ''));
+  const text = String(output || '');
+  return /not found any devices/i.test(text) ||
+    /no devices? found/i.test(text) ||
+    /no rockusb devices? found/i.test(text) ||
+    /did not find any rockusb device/i.test(text);
+}
+
+function normalizeTimeoutMs(value, fallback) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) return fallback;
+  return number;
+}
+
+function normalizeLocalPath(filePath) {
+  return path.resolve(String(filePath || ''));
+}
+
+function validateLocalPathSelection(kind, localPath, allowedLocalPaths) {
+  if (!localPath) {
+    throw new Error(`No local file selected for ${kind}.`);
+  }
+  if (!allowedLocalPaths || !allowedLocalPaths.has(normalizeLocalPath(localPath))) {
+    throw new Error(`Local ${kind} file must be selected with the file picker.`);
+  }
+  return localPath;
+}
+
+function urlHost(url) {
+  try {
+    return new URL(url).host;
+  } catch {
+    return '';
+  }
+}
+
+function publicConfig(config) {
+  return {
+    loader: {
+      url: config?.loader?.url || ''
+    },
+    image: {
+      url: config?.image?.url || '',
+      lba: config?.image?.lba ?? 0
+    }
+  };
+}
+
+function sourceSummary(config) {
+  const releaseApiUrl = config?.releaseApiUrl || githubApiFromReleasePage(config?.releasePageUrl);
+  return {
+    releaseApiHost: urlHost(releaseApiUrl),
+    loaderHost: urlHost(config?.loader?.url),
+    imageHost: urlHost(config?.image?.url)
+  };
 }
 
 async function sha256File(filePath, fsModule = fs) {
@@ -233,18 +339,27 @@ module.exports = {
   findChecksumAsset,
   findMatchingAsset,
   findRkdeveloptool,
+  findRkdeveloptoolWithDiagnostics,
   githubApiFromReleasePage,
   isNoDeviceOutput,
   isSimulatedDevice,
   loadConfigFiles,
+  loadConfigFilesWithSources,
+  normalizeLocalPath,
   normalizeFileKind,
+  normalizeTimeoutMs,
   normalizeUpdateOptions,
   parseChecksumText,
   parseDevices,
   plannedUpdateKinds,
   progressFromLine,
+  publicConfig,
   readJson,
   resolveSha256FromRelease,
   simulatedDevice,
+  sourceSummary,
+  urlHost,
+  validateCommandPrefix,
+  validateLocalPathSelection,
   sha256File
 };

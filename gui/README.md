@@ -85,6 +85,14 @@ app reads the release metadata, finds the requested asset, and verifies the
 download with the SHA256 digest published by GitHub. If the digest is not
 available, it searches a checksum asset or the release body.
 
+Network timeouts are configurable through `network.metadataTimeoutMs` and
+`network.downloadTimeoutMs`. Defaults are deliberately large: 300000 ms for
+metadata and 7200000 ms for firmware downloads.
+
+When a custom configuration file is loaded, the renderer shows a persistent
+warning banner. The confirmation dialog also lists the release, loader, and
+image source hosts before the update starts.
+
 ## Packaging
 
 Build `rkdeveloptool` first on the same OS and architecture, preferably with
@@ -240,6 +248,7 @@ The firmware assets are not embedded. The app downloads them on demand from the
 configured release URLs and verifies SHA256 before flashing.
 
 USB permissions and drivers are still OS-specific. Linux users should install
-udev rules or run with suitable privileges. On Windows, if the updater does
-not detect the ground station, use Zadig from https://zadig.akeo.ie/ to select
-the Rockusb/Maskrom/Loader USB entry and assign the WinUSB driver.
+udev rules or run with suitable privileges. On Windows, try the updater first;
+if it does not detect the ground station in Maskrom/Loader mode, use Zadig
+from https://zadig.akeo.ie/ to select the Rockusb/Maskrom/Loader USB entry and
+assign the WinUSB driver.
