@@ -2,6 +2,12 @@
 
 Electron GUI for `rkdeveloptool`.
 
+User-facing documentation is kept in the repository-level docs:
+
+- [Project README](../README.md)
+- [User guide with screenshots](../docs/USER_GUIDE.md)
+- [Contributor guide](../CONTRIBUTING.md)
+
 ## Development
 
 ```bash
@@ -11,6 +17,15 @@ npm test
 npm run coverage
 npm start
 ```
+
+Regenerate the screenshots used by the user guide:
+
+```bash
+npm run docs:screenshots
+```
+
+The screenshot script uses Chrome or Edge in headless mode. Set `CHROME_PATH`
+if the browser is installed in a non-standard location.
 
 ## Automatic Tests
 

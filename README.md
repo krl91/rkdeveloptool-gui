@@ -1,9 +1,45 @@
-rkdeveloptool
-=============
+# RK Firmware Updater and rkdeveloptool
 
-rkdeveloptool is a command-line tool for reading, writing, and resetting
-Rockchip Rockusb devices. This repository also includes an Electron GUI in
-the gui/ directory.
+Update Rockchip Rockusb devices without memorizing terminal commands.
+
+This repository contains:
+
+- **RK Firmware Updater**, a standalone desktop application for macOS, Linux,
+  and Windows
+- **rkdeveloptool**, the command-line utility used internally by the GUI
+- tests, packaging automation, and release workflows for maintainers
+
+![RK Firmware Updater main window](docs/assets/screenshots/02-main-window.png)
+
+## For Most Users
+
+Download the latest packaged application from:
+
+https://github.com/krl91/rkdeveloptool-gui/releases
+
+Then read the step-by-step guide:
+
+[Open the user guide](docs/USER_GUIDE.md)
+
+The packaged application includes Electron, the GUI, configuration files, and
+the matching `rkdeveloptool` binary. You do not need to install Node.js,
+Electron, or a separate `rkdeveloptool` binary to use the packaged app.
+
+## Documentation Map
+
+- [User guide](docs/USER_GUIDE.md): how to update a device with screenshots
+- [GUI developer README](gui/README.md): architecture, tests, and packaging
+- [Contributor guide](CONTRIBUTING.md): quality checks and release workflow
+- [Command-line usage](#command-line-usage): direct `rkdeveloptool` examples
+
+## What The GUI Does
+
+RK Firmware Updater detects one Rockusb device, lets the user choose a loader
+and/or image, verifies online downloads with SHA256, writes the loader before
+the image, shows progress, and offers to reboot the device at the end.
+
+If no device is connected, the application can start a simulation mode so users
+can explore the workflow safely.
 
 
 Quick Install: Command-Line Tool
