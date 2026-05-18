@@ -107,8 +107,9 @@ Configure these repository secrets before using it:
 - `APPLE_API_ISSUER`: App Store Connect issuer ID.
 
 The workflow writes the `.p8` key to the runner, builds `rkdeveloptool`, runs
-`npm run dist -- --mac`, and uploads the signed/notarized DMG as a workflow
-artifact.
+`npm run dist:mac`, uploads the signed/notarized DMG as a workflow artifact,
+and attaches the DMG to the matching GitHub release. For manual runs, set the
+`tag_name` input to the release tag to update, for example `v0.1.0`.
 
 The Electron macOS build uses hardened runtime and the entitlements in
 `gui/build/entitlements.mac.plist` and
