@@ -48,6 +48,8 @@ Quick Install: Command-Line Tool
 macOS:
 
 	brew install automake autoconf libusb pkg-config git wget
+	git clone https://github.com/krl91/rkdeveloptool-gui.git
+	cd rkdeveloptool-gui
 	autoreconf -i
 	./configure --enable-standalone
 	make -j$(sysctl -n hw.ncpu)
@@ -57,6 +59,8 @@ Linux Debian/Ubuntu:
 	sudo apt-get update
 	sudo apt-get install -y libudev-dev libusb-1.0-0-dev dh-autoreconf \
 		pkg-config libusb-1.0 build-essential git wget
+	git clone https://github.com/krl91/rkdeveloptool-gui.git
+	cd rkdeveloptool-gui
 	autoreconf -i
 	./configure --enable-standalone
 	make -j$(nproc)
@@ -78,8 +82,6 @@ Windows:
 
 	echo $MSYSTEM
 	gcc --version
-	node --version
-	npm --version
 	git clone https://github.com/krl91/rkdeveloptool-gui.git
 	cd rkdeveloptool-gui
 	autoreconf -i
@@ -105,7 +107,12 @@ Prerequisites:
 
 macOS:
 
-	brew install node
+	brew install automake autoconf libusb pkg-config git wget node
+	git clone https://github.com/krl91/rkdeveloptool-gui.git
+	cd rkdeveloptool-gui
+	autoreconf -i
+	./configure --enable-standalone
+	make -j$(sysctl -n hw.ncpu)
 	cd gui
 	npm install
 	npm run dist
@@ -118,7 +125,14 @@ Or build the command-line tool and the GUI package with one make command:
 
 Linux Debian/Ubuntu:
 
-	sudo apt-get install -y nodejs npm
+	sudo apt-get update
+	sudo apt-get install -y libudev-dev libusb-1.0-0-dev dh-autoreconf \
+		pkg-config libusb-1.0 build-essential git wget nodejs npm
+	git clone https://github.com/krl91/rkdeveloptool-gui.git
+	cd rkdeveloptool-gui
+	autoreconf -i
+	./configure --enable-standalone
+	make -j$(nproc)
 	cd gui
 	npm install
 	npm run dist

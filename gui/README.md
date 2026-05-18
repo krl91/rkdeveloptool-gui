@@ -146,6 +146,9 @@ application for the current OS.
 ```bash
 brew install automake autoconf libusb pkg-config git wget node
 
+git clone https://github.com/krl91/rkdeveloptool-gui.git
+cd rkdeveloptool-gui
+
 autoreconf -i
 ./configure --enable-standalone
 make -j$(sysctl -n hw.ncpu)
@@ -163,6 +166,9 @@ The output is written to `gui/dist/`.
 sudo apt-get update
 sudo apt-get install -y libudev-dev libusb-1.0-0-dev dh-autoreconf \
   pkg-config libusb-1.0 build-essential git wget nodejs npm
+
+git clone https://github.com/krl91/rkdeveloptool-gui.git
+cd rkdeveloptool-gui
 
 autoreconf -i
 ./configure --enable-standalone
