@@ -162,16 +162,24 @@ The output is written to `gui/dist/`.
 
 ### Windows
 
-Use the **MSYS2 UCRT64** shell.
+Use the **MSYS2 UCRT64** shell. Do not use the CLANG64, MINGW64, or MSYS shell
+with the commands below.
 
 ```bash
 pacman -Syu
+# If MSYS2 asks you to close the terminal after pacman -Syu, close it,
+# reopen "MSYS2 UCRT64", then continue below.
 pacman -S --needed git wget autoconf automake make pkgconf \
   mingw-w64-ucrt-x86_64-gcc \
   mingw-w64-ucrt-x86_64-pkgconf \
   mingw-w64-ucrt-x86_64-libusb \
   mingw-w64-ucrt-x86_64-nodejs \
   mingw-w64-ucrt-x86_64-npm
+
+echo $MSYSTEM
+gcc --version
+git clone https://github.com/krl91/rkdeveloptool-gui.git
+cd rkdeveloptool-gui
 
 autoreconf -i
 ./configure --enable-standalone
@@ -186,6 +194,11 @@ The output is written to `gui/dist/`.
 
 Use `npm run dist:dir` instead of `npm run dist` for a faster unpacked test
 build.
+
+If `./configure` reports `no acceptable C compiler found in $PATH`, you are
+usually in the wrong MSYS2 shell. The UCRT64 package names only work from the
+UCRT64 shell. Run `echo $MSYSTEM`; it must print `UCRT64`. If it prints
+`CLANG64`, close the terminal and open **MSYS2 UCRT64**.
 
 The firmware assets are not embedded. The app downloads them on demand from the
 configured release URLs and verifies SHA256 before flashing.

@@ -29,13 +29,21 @@ Windows:
 
 	1. Install MSYS2: https://www.msys2.org/
 	2. Open the "MSYS2 UCRT64" shell.
+	   Do not use the CLANG64, MINGW64, or MSYS shell for these commands.
 	3. Run:
 
 	pacman -Syu
+	# If MSYS2 asks you to close the terminal after pacman -Syu, close it,
+	# reopen "MSYS2 UCRT64", then continue below.
 	pacman -S --needed git wget autoconf automake make pkgconf \
 		mingw-w64-ucrt-x86_64-gcc \
 		mingw-w64-ucrt-x86_64-pkgconf \
 		mingw-w64-ucrt-x86_64-libusb
+
+	echo $MSYSTEM
+	gcc --version
+	git clone https://github.com/krl91/rkdeveloptool-gui.git
+	cd rkdeveloptool-gui
 	autoreconf -i
 	./configure --enable-standalone
 	make -j$(nproc)
@@ -85,7 +93,19 @@ Or build the command-line tool and the GUI package with one make command:
 
 Windows, from the MSYS2 UCRT64 shell:
 
-	pacman -S --needed mingw-w64-ucrt-x86_64-nodejs mingw-w64-ucrt-x86_64-npm
+	pacman -S --needed git wget autoconf automake make pkgconf \
+		mingw-w64-ucrt-x86_64-gcc \
+		mingw-w64-ucrt-x86_64-pkgconf \
+		mingw-w64-ucrt-x86_64-libusb \
+		mingw-w64-ucrt-x86_64-nodejs \
+		mingw-w64-ucrt-x86_64-npm
+	echo $MSYSTEM
+	gcc --version
+	git clone https://github.com/krl91/rkdeveloptool-gui.git
+	cd rkdeveloptool-gui
+	autoreconf -i
+	./configure --enable-standalone
+	make -j$(nproc)
 	cd gui
 	npm install
 	npm run dist
@@ -244,3 +264,27 @@ Debian/Ubuntu:
 macOS:
 
 	brew install pkg-config libusb
+
+Windows/MSYS2:
+
+	If configure fails with:
+
+		configure: error: no acceptable C compiler found in $PATH
+
+	check the MSYS2 shell. The documented commands install UCRT64 packages, so
+	the prompt must show UCRT64 and this command must print UCRT64:
+
+		echo $MSYSTEM
+
+	If it prints CLANG64, MINGW64, or MSYS, close that terminal and open
+	"MSYS2 UCRT64" from the Start menu. Then verify:
+
+		gcc --version
+
+	If you intentionally want to build from the CLANG64 shell instead, install
+	the matching CLANG64 packages instead of the UCRT64 packages:
+
+		pacman -S --needed git wget autoconf automake make pkgconf \
+			mingw-w64-clang-x86_64-clang \
+			mingw-w64-clang-x86_64-pkgconf \
+			mingw-w64-clang-x86_64-libusb
