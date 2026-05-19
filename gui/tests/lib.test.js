@@ -428,6 +428,7 @@ test('default config keeps network timeouts configurable and large', () => {
   const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
   assert.equal(config.network.metadataTimeoutMs, 300000);
   assert.equal(config.network.downloadTimeoutMs, 7200000);
+  assert.equal(config.rkdeveloptoolCommandDelayMs, 2000);
   assert.equal(config.documentationUrl, 'https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md');
 });
 

@@ -291,10 +291,11 @@ directory, in the Electron user data directory, or by setting:
 
 The firmware release page URL, GitHub API URL, Maskrom loader URL, Maskrom
 loader choices, image URL, asset names, image LBA, online user guide URL, application
-self-update settings, and network timeouts are configurable. Online GitHub
-release assets and application update downloads are verified with SHA256 before
-use. Direct Maskrom loader URLs without a published expected checksum are downloaded
-with their calculated SHA256 logged for traceability.
+self-update settings, network timeouts, and the delay between consecutive
+`rkdeveloptool` commands are configurable. Online GitHub release assets and
+application update downloads are verified with SHA256 before use. Direct
+Maskrom loader URLs without a published expected checksum are downloaded with
+their calculated SHA256 logged for traceability.
 
 Default network timeout values are intentionally large:
 
@@ -303,6 +304,7 @@ Default network timeout values are intentionally large:
 	autoUpdate.metadataTimeoutMs = 300000
 	autoUpdate.downloadTimeoutMs = 7200000
 	autoUpdate.installTimeoutMs = 1800000
+	rkdeveloptoolCommandDelayMs = 2000
 
 The application update check can be disabled with:
 

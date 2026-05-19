@@ -205,7 +205,9 @@ RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 Configurable values include the GitHub release page, GitHub API URL, loader
 URL, image URL, asset names, image LBA, online user guide URL, and network
 timeouts. Application self-update checks can also be configured or disabled
-with the `autoUpdate` section.
+with the `autoUpdate` section. The delay between consecutive `rkdeveloptool`
+commands is configurable with `rkdeveloptoolCommandDelayMs`; the default is
+2000 ms so the USB device has time to settle between operations.
 
 Default network timeouts are deliberately long:
 
@@ -215,6 +217,7 @@ Default network timeouts are deliberately long:
     "metadataTimeoutMs": 300000,
     "downloadTimeoutMs": 7200000
   },
+  "rkdeveloptoolCommandDelayMs": 2000,
   "autoUpdate": {
     "enabled": true,
     "checkOnStartup": true,

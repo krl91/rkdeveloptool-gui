@@ -94,7 +94,9 @@ The online guide opened from the GUI is configurable through
 `documentationUrl`. Network timeouts are configurable through
 `network.metadataTimeoutMs` and `network.downloadTimeoutMs`. Defaults are
 deliberately large: 300000 ms for metadata and 7200000 ms for firmware
-downloads.
+downloads. The GUI also waits between consecutive `rkdeveloptool` commands;
+`rkdeveloptoolCommandDelayMs` defaults to 2000 ms to give USB devices time to
+settle between `ld`, `db`, `wl`, and `rd`.
 
 The application self-update check is configured through `autoUpdate`. It can be
 disabled with `autoUpdate.enabled: false`. The updater skips the check when the

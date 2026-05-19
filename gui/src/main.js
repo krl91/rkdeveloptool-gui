@@ -26,6 +26,7 @@ const {
 } = require('./lib');
 const { createSimulationRunner } = require('./simulationRunner');
 const { createToolRunner } = require('./toolRunner');
+const { createCommandSequencer } = require('./commandDelay');
 const {
   detectDevices,
   deviceNeedsLoaderBeforeImage,
@@ -54,6 +55,9 @@ let appState = {
   windowlessTransition: false
 };
 let quitWarningOpen = false;
+const rkdeveloptoolCommandSequencer = createCommandSequencer({
+  getDelayMs: () => normalizeTimeoutMs(appState.config?.rkdeveloptoolCommandDelayMs, 2000)
+});
 
 function loadConfig() {
   const defaultConfigPath = path.join(__dirname, '..', 'config', 'default.json');
@@ -85,13 +89,15 @@ function runTool(args, options = {}) {
   if (appState.simulation) {
     return createSimulationRunner({ emit })(args, options);
   }
-  const runner = createToolRunner({
-    toolPath: appState.rkdeveloptoolPath,
-    config: appState.config,
-    searchPaths: appState.rkdeveloptoolSearchPaths,
-    emit
+  return rkdeveloptoolCommandSequencer.run(() => {
+    const runner = createToolRunner({
+      toolPath: appState.rkdeveloptoolPath,
+      config: appState.config,
+      searchPaths: appState.rkdeveloptoolSearchPaths,
+      emit
+    });
+    return runner(args, options);
   });
-  return runner(args, options);
 }
 
 function timeoutSignal(timeoutMs) {
