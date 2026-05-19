@@ -28,7 +28,10 @@ const {
 } = require('./lib');
 const { createSimulationRunner } = require('./simulationRunner');
 const { createToolRunner } = require('./toolRunner');
-const { createMainWindow: createBrowserMainWindow } = require('./windowFactory');
+const {
+  createMainWindow: createBrowserMainWindow,
+  createNoDeviceWindow: createBrowserNoDeviceWindow
+} = require('./windowFactory');
 
 let mainWindow = null;
 let appState = {
@@ -39,7 +42,8 @@ let appState = {
   rkdeveloptoolSearchPaths: [],
   simulation: false,
   busy: false,
-  allowedLocalPaths: new Set()
+  allowedLocalPaths: new Set(),
+  windowlessTransition: false
 };
 let quitWarningOpen = false;
 
@@ -318,6 +322,45 @@ async function createMainWindow() {
   });
 }
 
+async function showNoDeviceChoice() {
+  let noDeviceWindow = null;
+  let settled = false;
+
+  return new Promise((resolve, reject) => {
+    function settle(choice) {
+      if (settled) return;
+      settled = true;
+      ipcMain.removeListener('no-device:choice', onChoice);
+      if (noDeviceWindow && !noDeviceWindow.isDestroyed()) {
+        noDeviceWindow.close();
+      }
+      resolve(choice);
+    }
+
+    function onChoice(event, choice) {
+      if (!noDeviceWindow || event.sender !== noDeviceWindow.webContents) return;
+      if (choice === 'simulate' || choice === 'try-again') {
+        settle(choice);
+        return;
+      }
+      settle('close');
+    }
+
+    ipcMain.on('no-device:choice', onChoice);
+    createBrowserNoDeviceWindow({
+      BrowserWindow,
+      preloadPath: path.join(__dirname, 'no-device-preload.js'),
+      htmlPath: path.join(__dirname, 'no-device.html')
+    }).then((window) => {
+      noDeviceWindow = window;
+      noDeviceWindow.on('closed', () => settle('close'));
+    }).catch((error) => {
+      ipcMain.removeListener('no-device:choice', onChoice);
+      reject(error);
+    });
+  });
+}
+
 ipcMain.handle('app:getInitialState', () => ({
   device: appState.device,
   config: publicConfig(appState.config),
@@ -411,6 +454,30 @@ ipcMain.handle('app:reboot', async () => {
   }
 });
 
+async function detectDeviceWithNoDeviceWorkflow() {
+  while (true) {
+    const devices = await detectSingleDevice();
+    if (devices.length > 0) {
+      return devices;
+    }
+
+    appState.windowlessTransition = true;
+    const choice = await showNoDeviceChoice();
+    appState.windowlessTransition = false;
+
+    if (choice === 'try-again') {
+      continue;
+    }
+
+    if (choice === 'simulate') {
+      return [];
+    }
+
+    app.quit();
+    return null;
+  }
+}
+
 app.whenReady().then(async () => {
   try {
     const loadedConfig = loadConfig();
@@ -419,21 +486,11 @@ app.whenReady().then(async () => {
     const tool = findRkdeveloptool(appState.config);
     appState.rkdeveloptoolPath = tool.path;
     appState.rkdeveloptoolSearchPaths = tool.searchPaths;
-    const devices = await detectSingleDevice();
+    const devices = await detectDeviceWithNoDeviceWorkflow();
+    if (!devices) {
+      return;
+    }
     if (devices.length === 0) {
-      const result = await dialog.showMessageBox({
-        type: 'warning',
-        buttons: ['Simulate a device', 'Close'],
-        defaultId: 0,
-        cancelId: 1,
-        title: 'No device',
-        message: 'No Rockusb device was detected.',
-        detail: 'You can simulate a device to open the interface without flashing real hardware, or close the application.'
-      });
-      if (result.response === 1) {
-        app.quit();
-        return;
-      }
       appState.device = simulatedDevice();
       appState.simulation = true;
       await createMainWindow();
@@ -505,6 +562,9 @@ app.on('before-quit', (event) => {
 });
 
 app.on('window-all-closed', () => {
+  if (appState.windowlessTransition) {
+    return;
+  }
   if (appState.busy) {
     warnOperationInProgress();
     return;

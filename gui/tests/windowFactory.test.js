@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { createMainWindow } = require('../src/windowFactory');
+const { createMainWindow, createNoDeviceWindow } = require('../src/windowFactory');
 
 function createFakeBrowserWindow({ emitReadyDuringLoad }) {
   const instances = [];
@@ -102,4 +102,29 @@ test('main window blocks close while a flash operation is busy', async () => {
 
   assert.equal(prevented, true);
   assert.equal(warned, true);
+});
+
+test('no-device window is image-capable and keeps Electron hardening enabled', async () => {
+  const { FakeBrowserWindow, instances } = createFakeBrowserWindow({ emitReadyDuringLoad: false });
+  const window = await createNoDeviceWindow({
+    BrowserWindow: FakeBrowserWindow,
+    preloadPath: '/app/no-device-preload.js',
+    htmlPath: '/app/no-device.html'
+  });
+
+  assert.equal(instances.length, 1);
+  assert.equal(window.visible, true);
+  assert.deepEqual(window.events, [
+    'once:ready-to-show',
+    'loadFile:/app/no-device.html',
+    'show'
+  ]);
+  assert.equal(window.options.title, 'No Rockusb Device');
+  assert.equal(window.options.resizable, true);
+  assert.equal(window.options.height, 700);
+  assert.equal(window.options.minHeight, 480);
+  assert.equal(window.options.webPreferences.preload, '/app/no-device-preload.js');
+  assert.equal(window.options.webPreferences.contextIsolation, true);
+  assert.equal(window.options.webPreferences.nodeIntegration, false);
+  assert.equal(window.options.webPreferences.sandbox, true);
 });

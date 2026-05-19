@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 384" role="img" aria-labelledby="title desc">
+  <title id="title">RunCam WiFiLink RX flash button</title>
+  <desc id="desc">Diagram showing the flash button location on the RunCam WiFiLink RX and the flashing mode instructions.</desc>
+  <rect width="1080" height="384" fill="#ffffff"/>
+  <g fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M35 214 360 92l153 43 11 109-313 96L42 274Z"/>
+    <path d="M35 214 211 283 524 189"/>
+    <path d="M211 283v57M524 189v55"/>
+    <path d="M70 229 218 286M92 216l138 53M119 204l126 47"/>
+    <path d="M180 158 358 95l122 34-169 60Z"/>
+    <path d="M206 165 356 113l88 24-145 48Z"/>
+    <path d="M145 174 195 156M160 185l55-20M176 195l60-21"/>
+    <path d="M308 103l21-38 150 38 8 30"/>
+    <path d="M334 74 467 108M353 69l127 33M371 65l109 29"/>
+    <path d="M255 122l-29-17 73-27 38 11"/>
+    <path d="M205 137 160 122l67-26 43 16"/>
+    <path d="M283 208 450 160M297 222l166-49M311 236l152-45"/>
+    <path d="M90 261h42l-7 37H84Z"/>
+    <path d="M147 282h47l-5 39h-45Z"/>
+    <path d="M250 304h50M339 277h52"/>
+    <path d="M30 249c-28-5-35-28-10-44l26-8 14 33Z"/>
+    <path d="M42 275c-24 4-38-11-31-30"/>
+    <path d="M520 168l31 13-1 38-25 20"/>
+  </g>
+  <g fill="none" stroke="#111111" stroke-width="2.5" stroke-linecap="round">
+    <path d="M387 147v-17M400 145v-17M413 142v-17M426 139v-17"/>
+    <path d="M391 219v-19M404 216v-19M417 212v-19M430 209v-19"/>
+    <path d="M125 253v-17M139 258v-17M153 263v-17M167 268v-17"/>
+  </g>
+  <circle cx="387" cy="209" r="78" fill="#7f7f7f" opacity="0.68"/>
+  <circle cx="389" cy="209" r="22" fill="#ffffff" stroke="#111111" stroke-width="2"/>
+  <circle cx="389" cy="209" r="5" fill="#111111"/>
+  <path d="M468 209h102" stroke="#ff6f3c" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 8"/>
+  <circle cx="572" cy="209" r="3.5" fill="#ff6f3c"/>
+  <text x="578" y="98" font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="700" fill="#111111">Flash Button</text>
+  <text x="578" y="143" font-family="Arial, Helvetica, sans-serif" font-size="29" fill="#222222">
+    <tspan x="578" dy="0">Press and hold the flash button, then</tspan>
+    <tspan x="578" dy="37">connect DC power. After 2 seconds,</tspan>
+    <tspan x="578" dy="37">release the button - the RX will enter</tspan>
+    <tspan x="578" dy="37">flashing mode. At this point, connect</tspan>
+    <tspan x="578" dy="37">the RX to a computer via Type-C, and</tspan>
+    <tspan x="578" dy="37">begin the flashing process...</tspan>
+  </text>
+</svg>

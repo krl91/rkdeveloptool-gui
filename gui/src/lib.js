@@ -9,6 +9,11 @@ const ALLOWED_COMMAND_PREFIXES = {
   pkexec: new Set(),
   doas: new Set(['-n'])
 };
+const noDeviceHelpDetail = [
+  'RunCam WiFiLink RX / OpenIPC ground stations: before starting the application, connect the USB-C data cable while holding the reset/flash button with a paper clip for about 2 seconds, then release it.',
+  'If the receiver needs separate DC power, apply power while holding the button, wait 2 seconds, then release it.',
+  'You can simulate a device to open the interface without flashing real hardware, or close the application.'
+].join('\n\n');
 
 function deepMerge(base, override) {
   const output = { ...base };
@@ -357,6 +362,7 @@ module.exports = {
   githubApiFromReleasePage,
   isNoDeviceOutput,
   isSimulatedDevice,
+  noDeviceHelpDetail,
   loadConfigFiles,
   loadConfigFilesWithSources,
   normalizeLocalPath,

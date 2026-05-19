@@ -5,6 +5,8 @@ const test = require('node:test');
 
 const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'utf8');
 const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
+const noDeviceHtml = fs.readFileSync(path.join(__dirname, '..', 'src', 'no-device.html'), 'utf8');
+const main = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
 const renderer = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer.js'), 'utf8');
 
 test('layout allows the window to scroll when content is taller than the viewport', () => {
@@ -36,6 +38,34 @@ test('renderer document declares a restrictive content security policy', () => {
   assert.match(html, /http-equiv="Content-Security-Policy"/);
   assert.match(html, /default-src 'self'/);
   assert.match(html, /object-src 'none'/);
+});
+
+test('no-device screen shows the RunCam flash-button image and simulation action', () => {
+  assert.match(noDeviceHtml, /runcam-wifilink-rx-flash-button\.svg/);
+  assert.match(noDeviceHtml, /No Rockusb device was detected/);
+  assert.match(noDeviceHtml, /USB-C data cable/);
+  assert.match(noDeviceHtml, /reset\/flash button/);
+  assert.match(noDeviceHtml, /Try again/);
+  assert.match(noDeviceHtml, /Simulate a device/);
+  assert.match(noDeviceHtml, /Content-Security-Policy/);
+  assert.match(noDeviceHtml, /script-src 'none'/);
+});
+
+test('no-device screen keeps actions reachable in short macOS windows', () => {
+  assert.match(noDeviceHtml, /body\s*\{[\s\S]*height:\s*100vh;/);
+  assert.match(noDeviceHtml, /body\s*\{[\s\S]*overflow:\s*hidden;/);
+  assert.match(noDeviceHtml, /\.panel\s*\{[\s\S]*overflow-y:\s*auto;/);
+  assert.match(noDeviceHtml, /\.actions\s*\{[\s\S]*position:\s*sticky;/);
+  assert.match(noDeviceHtml, /\.actions\s*\{[\s\S]*bottom:\s*0;/);
+  assert.match(noDeviceHtml, /\.actions\s*\{[\s\S]*flex-shrink:\s*0;/);
+});
+
+test('simulation choice keeps the app alive while switching windows', () => {
+  assert.match(main, /windowlessTransition:\s*false/);
+  assert.match(main, /appState\.windowlessTransition\s*=\s*true;/);
+  assert.match(main, /choice === 'try-again'/);
+  assert.match(main, /continue;/);
+  assert.match(main, /if \(appState\.windowlessTransition\)\s*\{\s*return;\s*\}/);
 });
 
 test('custom configuration banner is present and hidden by default', () => {

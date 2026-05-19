@@ -30,6 +30,28 @@ Platform notes:
 - **macOS:** no separate driver is usually required, but the application may
   ask for permission depending on the local security settings.
 
+## Put A RunCam WiFiLink RX In Flash Mode
+
+For a RunCam WiFiLink RX or OpenIPC ground station, the receiver must be in
+Rockusb/Maskrom flash mode before RK Firmware Updater starts. Use the USB-C
+data port and the recessed reset/flash button.
+
+![RunCam WiFiLink RX flash button](../gui/src/assets/runcam-wifilink-rx-flash-button.svg)
+
+1. Unplug the receiver.
+2. Press and hold the reset/flash button with a paper clip, SIM eject tool, or
+   small screwdriver.
+3. While holding the button, connect the USB-C data cable to the computer.
+4. Keep holding the button for about 2 seconds, then release it.
+5. Click **Try again** in RK Firmware Updater.
+
+If your receiver also needs separate DC power, apply DC power while holding the
+button, wait about 2 seconds, then release it.
+
+If the application still does not detect the receiver, try another USB-C data
+cable, connect directly to the computer without a hub, and confirm that the
+USB-C port used is the data/flash port.
+
 ## Start The Application
 
 Launch **RK Firmware Updater**.
@@ -37,8 +59,13 @@ Launch **RK Firmware Updater**.
 If no device is detected, the application offers two choices. The exact dialog
 style follows your operating system, but the choices are the same:
 
+- **Try again** runs device detection again without restarting the application.
 - **Simulate** starts a safe demo mode. It does not flash real hardware.
-- **Quit** closes the application so you can connect the device and try again.
+- **Close** closes the application so you can connect the device and try again.
+
+The dialog also reminds RunCam WiFiLink RX users to connect the USB-C cable
+while holding the reset/flash button for about 2 seconds before trying
+detection again.
 
 ![No device detected dialog](assets/screenshots/01-no-device-simulation-choice.png)
 

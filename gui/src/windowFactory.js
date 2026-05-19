@@ -28,6 +28,33 @@ async function createMainWindow({ BrowserWindow, preloadPath, indexPath, shouldB
   return window;
 }
 
+async function createNoDeviceWindow({ BrowserWindow, preloadPath, htmlPath }) {
+  const window = new BrowserWindow({
+    width: 940,
+    height: 700,
+    minWidth: 720,
+    minHeight: 480,
+    show: false,
+    resizable: true,
+    title: 'No Rockusb Device',
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  });
+
+  window.once('ready-to-show', () => window.show());
+  await window.loadFile(htmlPath);
+  if (!window.isVisible()) {
+    window.show();
+  }
+
+  return window;
+}
+
 module.exports = {
-  createMainWindow
+  createMainWindow,
+  createNoDeviceWindow
 };

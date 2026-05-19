@@ -20,6 +20,7 @@ const {
   isSimulatedDevice,
   loadConfigFiles,
   loadConfigFilesWithSources,
+  noDeviceHelpDetail,
   normalizeLocalPath,
   normalizeFileKind,
   normalizeTimeoutMs,
@@ -221,6 +222,16 @@ test('isNoDeviceOutput recognizes rkdeveloptool ld no-device output', () => {
   assert.equal(isNoDeviceOutput('No devices found'), true);
   assert.equal(isNoDeviceOutput('Did not find any rockusb device, please plug device in!'), true);
   assert.equal(isNoDeviceOutput('Found too many rockusb devices'), false);
+});
+
+test('no-device help explains the RunCam WiFiLink RX flash-mode sequence', () => {
+  assert.match(noDeviceHelpDetail, /RunCam WiFiLink RX/);
+  assert.match(noDeviceHelpDetail, /USB-C data cable/);
+  assert.match(noDeviceHelpDetail, /reset\/flash button/);
+  assert.match(noDeviceHelpDetail, /paper clip/);
+  assert.match(noDeviceHelpDetail, /2 seconds/);
+  assert.match(noDeviceHelpDetail, /before starting the application/);
+  assert.match(noDeviceHelpDetail, /simulate a device/);
 });
 
 test('simulatedDevice is recognized as simulation-only', () => {

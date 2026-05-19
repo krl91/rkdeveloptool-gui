@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'none'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    >
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>No Rockusb Device</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        color: #17202a;
+        background: #f4f7fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 0;
+        height: 100vh;
+        overflow: hidden;
+        background: #f4f7fb;
+      }
+
+      main {
+        width: min(920px, calc(100vw - 32px));
+        height: 100vh;
+        margin: 0 auto;
+        padding: 18px 0 0;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        overflow: hidden;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 25px;
+        line-height: 1.2;
+        letter-spacing: 0;
+      }
+
+      p {
+        margin: 0;
+        color: #516071;
+        font-size: 15px;
+        line-height: 1.5;
+      }
+
+      .panel {
+        min-height: 0;
+        border: 1px solid #d8dee8;
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: 0 20px 60px rgba(16, 24, 40, 0.14);
+        overflow-y: auto;
+      }
+
+      .hero-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        background: #ffffff;
+        border-bottom: 1px solid #e4e9f1;
+      }
+
+      .content {
+        padding: 18px 22px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .steps {
+        margin: 0;
+        padding-left: 24px;
+        color: #17202a;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .steps li + li {
+        margin-top: 6px;
+      }
+
+      .notice {
+        border-left: 4px solid #f97316;
+        padding: 10px 12px;
+        background: #fff7ed;
+        color: #7c2d12;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .actions {
+        position: sticky;
+        bottom: 0;
+        flex-shrink: 0;
+        margin-top: 0;
+        padding: 14px 0 18px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        flex-wrap: wrap;
+        background: #f4f7fb;
+      }
+
+      button {
+        min-width: 150px;
+        min-height: 44px;
+        border-radius: 8px;
+        border: 1px solid #d8dee8;
+        padding: 0 18px;
+        background: #ffffff;
+        color: #17202a;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+
+      button:hover {
+        border-color: #b8c2d0;
+        background: #f9fbfd;
+      }
+
+      .primary {
+        border-color: #1f6feb;
+        background: #1f6feb;
+        color: #ffffff;
+      }
+
+      .primary:hover {
+        border-color: #1d64d8;
+        background: #1d64d8;
+      }
+
+      @media (max-width: 720px) {
+        main {
+          width: min(100vw - 20px, 920px);
+          padding-top: 10px;
+        }
+
+        h1 {
+          font-size: 25px;
+        }
+
+        .content {
+          padding: 18px;
+        }
+
+        .actions {
+          flex-direction: column-reverse;
+          padding-bottom: 10px;
+        }
+
+        button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="panel" aria-labelledby="title">
+        <img
+          class="hero-image"
+          src="assets/runcam-wifilink-rx-flash-button.svg"
+          alt="RunCam WiFiLink RX flash button location and flashing-mode instructions"
+        >
+        <div class="content">
+          <h1 id="title">No Rockusb device was detected</h1>
+          <p>
+            For a RunCam WiFiLink RX or OpenIPC ground station, put the receiver
+            in flashing mode before trying detection again.
+          </p>
+          <ol class="steps">
+            <li>Press and hold the reset/flash button with a paper clip.</li>
+            <li>While holding the button, connect the USB-C data cable.</li>
+            <li>Keep holding the button for about 2 seconds, then release it.</li>
+            <li>Click Try again.</li>
+          </ol>
+          <p class="notice">
+            If the receiver needs separate DC power, apply DC power while
+            holding the button, wait about 2 seconds, then release it.
+          </p>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button id="closeButton" type="button">Close</button>
+        <button id="tryAgainButton" type="button">Try again</button>
+        <button id="simulateButton" class="primary" type="button">Simulate a device</button>
+      </div>
+    </main>
+  </body>
+</html>

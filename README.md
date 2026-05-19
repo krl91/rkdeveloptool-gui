@@ -290,6 +290,17 @@ source hosts before any flash operation starts.
 USB Notes
 ---------
 
+RunCam WiFiLink RX / OpenIPC ground stations:
+
+![RunCam WiFiLink RX flash button](gui/src/assets/runcam-wifilink-rx-flash-button.svg)
+
+	Before starting RK Firmware Updater, put the receiver in Rockusb/Maskrom
+	flash mode. Connect the USB-C data cable while holding the recessed
+	reset/flash button with a paper clip for about 2 seconds, then release it.
+
+	If the receiver also needs separate DC power, apply DC power while holding
+	the button, wait about 2 seconds, then release it.
+
 Linux:
 
 	Install a udev rule or run with suitable privileges. A sample rule is

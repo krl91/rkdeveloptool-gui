@@ -8,6 +8,8 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const guiRoot = path.resolve(__dirname, '..');
 const outputDir = path.join(repoRoot, 'docs', 'assets', 'screenshots');
 const css = fs.readFileSync(path.join(guiRoot, 'src', 'styles.css'), 'utf8');
+const { noDeviceHelpDetail } = require('../src/lib');
+const flashButtonImageUrl = pathToFileURL(path.join(guiRoot, 'src', 'assets', 'runcam-wifilink-rx-flash-button.svg')).href;
 const loaderUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_u-boot.bin';
 const imageUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_sdcard.img';
 
@@ -181,6 +183,56 @@ function dialogBody(title, message, primary, secondary, warning = false) {
 </style>`;
 }
 
+function noDeviceDialogBody() {
+  return `
+<section class="dialog no-device-dialog" aria-label="No Rockusb device detected">
+  <img
+    src="${flashButtonImageUrl}"
+    alt="RunCam WiFiLink RX flash button location and flashing-mode instructions"
+  >
+  <h1>No Rockusb device detected</h1>
+  <p>${noDeviceHelpDetail}</p>
+  <div class="actions">
+    <button>Close</button>
+    <button>Try again</button>
+    <button class="primary">Simulate</button>
+  </div>
+</section>
+<style>
+  body {
+    display: grid;
+    place-items: center;
+    background: #eef2f6;
+  }
+  .no-device-dialog {
+    width: min(860px, calc(100vw - 48px));
+    padding: 0;
+    overflow: hidden;
+  }
+  .no-device-dialog img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-bottom: 1px solid #e4e9f1;
+  }
+  .no-device-dialog h1,
+  .no-device-dialog p,
+  .no-device-dialog .actions {
+    margin-left: 28px;
+    margin-right: 28px;
+  }
+  .no-device-dialog h1 {
+    margin-top: 24px;
+  }
+  .no-device-dialog p {
+    white-space: pre-line;
+  }
+  .no-device-dialog .actions {
+    margin-bottom: 28px;
+  }
+</style>`;
+}
+
 function renderScreenshot(chrome, filename, html, width = 1280, height = 900) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rkdeveloptool-docs-'));
   const htmlPath = path.join(tempDir, `${path.basename(filename, '.png')}.html`);
@@ -208,12 +260,7 @@ function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   const chrome = findChrome();
 
-  renderScreenshot(chrome, '01-no-device-simulation-choice.png', htmlPage(dialogBody(
-    'No Rockusb device detected',
-    'Connect a Rockusb device and restart the application, or start simulation mode to explore the updater without flashing real hardware.',
-    'Simulate',
-    'Quit'
-  )), 980, 560);
+  renderScreenshot(chrome, '01-no-device-simulation-choice.png', htmlPage(noDeviceDialogBody()), 1040, 820);
 
   renderScreenshot(chrome, '02-main-window.png', htmlPage(appBody()), 1280, 900);
 
