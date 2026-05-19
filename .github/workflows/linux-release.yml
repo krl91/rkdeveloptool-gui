@@ -15,9 +15,21 @@ permissions:
   contents: write
 
 jobs:
-  build-linux-appimage:
-    name: Build Linux AppImage
-    runs-on: ubuntu-latest
+  build-linux-packages:
+    name: Build Linux packages (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-latest
+            build_script: dist:linux:x64
+            artifact_name: rk-firmware-updater-linux-x64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            build_script: dist:linux:arm64
+            artifact_name: rk-firmware-updater-linux-arm64
 
     steps:
       - name: Check out repository
@@ -59,20 +71,22 @@ jobs:
           npm run check
           npm test
 
-      - name: Build Linux AppImage
+      - name: Build Linux packages
         working-directory: gui
-        run: npm run dist:linux
+        run: npm run ${{ matrix.build_script }}
 
       - name: Upload Linux artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: rk-firmware-updater-linux
+          name: ${{ matrix.artifact_name }}
           path: |
             gui/dist/*.AppImage
             gui/dist/*.AppImage.blockmap
+            gui/dist/*.deb
+            gui/dist/*.rpm
           if-no-files-found: error
 
-      - name: Upload AppImage to GitHub release
+      - name: Upload Linux packages to GitHub release
         if: ${{ startsWith(github.ref, 'refs/tags/') || inputs.tag_name != '' }}
         working-directory: gui
         env:
@@ -83,10 +97,10 @@ jobs:
             gh release create "$RELEASE_TAG" \
               --repo "$GITHUB_REPOSITORY" \
               --title "RK Firmware Updater ${RELEASE_TAG#v}" \
-              --notes "Linux AppImage release."
+              --notes "Linux package release."
           fi
           shopt -s nullglob
-          files=(dist/*.AppImage dist/*.AppImage.blockmap)
+          files=(dist/*.AppImage dist/*.AppImage.blockmap dist/*.deb dist/*.rpm)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "No Linux release artifacts found in gui/dist"
             exit 1

@@ -15,7 +15,9 @@
     "stage:rkdeveloptool": "node scripts/stage-rkdeveloptool.js",
     "dist": "npm run stage:rkdeveloptool && electron-builder",
     "dist:mac": "npm run stage:rkdeveloptool && electron-builder --mac",
-    "dist:linux": "npm run stage:rkdeveloptool && electron-builder --linux",
+    "dist:linux": "npm run dist:linux:x64",
+    "dist:linux:x64": "npm run stage:rkdeveloptool && electron-builder --linux AppImage deb rpm --x64",
+    "dist:linux:arm64": "npm run stage:rkdeveloptool && electron-builder --linux AppImage deb --arm64",
     "dist:win": "npm run stage:rkdeveloptool && electron-builder --win",
     "dist:dir": "npm run stage:rkdeveloptool && electron-builder --dir"
   },
@@ -49,6 +51,7 @@
       ]
     },
     "linux": {
+      "artifactName": "RK.Firmware.Updater-${version}-${arch}.${ext}",
       "target": [
         "AppImage"
       ],

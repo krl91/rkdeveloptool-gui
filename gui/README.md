@@ -132,7 +132,8 @@ installed `rkdeveloptool`.
 Build packages on the target OS:
 
 - macOS: produces a DMG
-- Linux: produces an AppImage
+- Linux: produces an AppImage by default; the release workflow also produces
+  Debian packages for x64 and arm64, plus an RPM package for x64
 - Windows: produces an NSIS installer
 
 For macOS distribution outside a development machine, use the repository
@@ -144,12 +145,24 @@ For Windows release builds, use `.github/workflows/windows-release.yml`. It
 builds `rkdeveloptool.exe` with MSYS2 UCRT64, then produces the NSIS installer.
 
 For Linux release builds, use `.github/workflows/linux-release.yml`. It builds
-`rkdeveloptool` on Ubuntu/Debian, then produces the AppImage.
+`rkdeveloptool` on Ubuntu/Debian for x64 and arm64, then produces:
+
+- `AppImage` packages for x64 and arm64
+- `.deb` packages for Debian/Ubuntu x64 and arm64, including Raspberry Pi OS
+  64-bit
+- `.rpm` packages for Red Hat/Fedora x64
 
 For a quick unpacked build:
 
 ```bash
 npm run dist:dir
+```
+
+Linux package commands:
+
+```bash
+npm run dist:linux:x64    # AppImage, deb, rpm for Intel/AMD 64-bit
+npm run dist:linux:arm64  # AppImage and deb for ARM64 / Raspberry Pi OS 64-bit
 ```
 
 ## Complete Build Commands

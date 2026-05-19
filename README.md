@@ -232,8 +232,10 @@ packages on tag pushes:
 		and uploads the NSIS installer.
 
 	Linux Release
-		Builds the standalone rkdeveloptool binary on Ubuntu/Debian, then
-		builds and uploads the AppImage.
+		Builds the standalone rkdeveloptool binary on Ubuntu/Debian for
+		x64 and arm64, then builds and uploads AppImage packages for both
+		architectures, Debian packages for x64 and arm64, and an RPM package
+		for x64 Red Hat/Fedora systems.
 
 The automatic test procedure is documented in the next section.
 

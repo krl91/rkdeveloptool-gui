@@ -145,20 +145,22 @@ input to the release tag to update, for example `v0.1.2`.
 The Linux release workflow is `.github/workflows/linux-release.yml`. It runs on
 tag pushes matching `v*` and can also be started manually from GitHub Actions.
 
-The workflow uses Ubuntu/Debian packages to install Autotools, libusb, and
-AppImage runtime support, builds `rkdeveloptool` with:
+The workflow uses Ubuntu/Debian packages to install Autotools, libusb, libudev,
+and AppImage runtime support. It builds `rkdeveloptool` natively on x64 and
+arm64 runners with:
 
 ```bash
 ./configure --enable-standalone
 make -j"$(nproc)"
 ```
 
-It then runs the GUI checks and builds the AppImage with:
+It then runs the GUI checks and builds Linux packages with:
 
 ```bash
-npm run dist:linux
+npm run dist:linux:x64    # AppImage, deb, rpm
+npm run dist:linux:arm64  # AppImage, deb
 ```
 
-The resulting AppImage and blockmap are uploaded as workflow artifacts and
-attached to the matching GitHub release. For manual runs, set the `tag_name`
-input to the release tag to update, for example `v0.1.2`.
+The resulting AppImage, Debian, RPM, and optional blockmap files are uploaded as
+workflow artifacts and attached to the matching GitHub release. For manual runs,
+set the `tag_name` input to the release tag to update, for example `v0.1.2`.
