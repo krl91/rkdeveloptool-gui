@@ -10,7 +10,7 @@ const outputDir = path.join(repoRoot, 'docs', 'assets', 'screenshots');
 const css = fs.readFileSync(path.join(guiRoot, 'src', 'styles.css'), 'utf8');
 const { noDeviceHelpDetail } = require('../src/lib');
 const flashButtonImageUrl = pathToFileURL(path.join(guiRoot, 'src', 'assets', 'runcam-wifilink-rx-flash-button.png')).href;
-const loaderUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_u-boot.bin';
+const loaderUrl = 'https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin';
 const imageUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_sdcard.img';
 
 function commandExists(command) {
@@ -278,8 +278,8 @@ function main() {
     status: 'Updating...',
     log: [
       'Simulation mode: no real device will be flashed.',
-      'SHA256 OK runcam_wifilink_u-boot.bin: 1f1035bd466423ac786c5821ba2dbf20feaafed8c26f2463658dc1e246e7849a',
-      '$ SIMULATION rkdeveloptool db runcam_wifilink_u-boot.bin',
+      'SHA256 rk356x_spl_loader_ddr1056_v1.10.111.bin: calculated-at-runtime (no expected checksum configured)',
+      '$ SIMULATION rkdeveloptool db rk356x_spl_loader_ddr1056_v1.10.111.bin',
       'Simulation: loader OK.',
       'SHA256 OK runcam_wifilink_sdcard.img: e087dfeee1dc93e749f2e41fe16323366d77c1fe1d96a7c70484d1080866e77e',
       '$ SIMULATION rkdeveloptool wl 0 runcam_wifilink_sdcard.img',
@@ -297,8 +297,8 @@ function main() {
     rebootEnabled: true,
     log: [
       'Simulation mode: no real device will be flashed.',
-      'SHA256 OK runcam_wifilink_u-boot.bin: 1f1035bd466423ac786c5821ba2dbf20feaafed8c26f2463658dc1e246e7849a',
-      '$ SIMULATION rkdeveloptool db runcam_wifilink_u-boot.bin',
+      'SHA256 rk356x_spl_loader_ddr1056_v1.10.111.bin: calculated-at-runtime (no expected checksum configured)',
+      '$ SIMULATION rkdeveloptool db rk356x_spl_loader_ddr1056_v1.10.111.bin',
       'Simulation: loader OK.',
       'SHA256 OK runcam_wifilink_sdcard.img: e087dfeee1dc93e749f2e41fe16323366d77c1fe1d96a7c70484d1080866e77e',
       '$ SIMULATION rkdeveloptool wl 0 runcam_wifilink_sdcard.img',

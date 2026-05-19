@@ -85,6 +85,10 @@ app reads the release metadata, finds the requested asset, and verifies the
 download with the SHA256 digest published by GitHub. If the digest is not
 available, it searches a checksum asset or the release body.
 
+`loader.choices` defines the online loader dropdown shown in the GUI. The
+default choices are Radxa RK356x SPL loaders for `rkdeveloptool db`; OpenIPC
+`u-boot.bin` files are not valid `db` loaders.
+
 The online guide opened from the GUI is configurable through
 `documentationUrl`. Network timeouts are configurable through
 `network.metadataTimeoutMs` and `network.downloadTimeoutMs`. Defaults are

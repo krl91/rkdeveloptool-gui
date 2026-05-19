@@ -34,6 +34,14 @@ test('quick online update button is visually marked as a warning', () => {
   assert.match(html, /Updates the loader first, then the image, using the latest online files\./);
 });
 
+test('loader card exposes preset loader choices plus manual local mode', () => {
+  assert.match(html, /id="loaderChoice"/);
+  assert.match(html, /<span>Manual<\/span>/);
+  assert.match(renderer, /loaderChoiceId: elements\.loaderChoice\.value/);
+  assert.match(renderer, /state\.config\.loader\.choices/);
+  assert.match(renderer, /option\.dataset\.url = choice\.url/);
+});
+
 test('renderer document declares a restrictive content security policy', () => {
   assert.match(html, /http-equiv="Content-Security-Policy"/);
   assert.match(html, /default-src 'self'/);

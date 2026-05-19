@@ -29,7 +29,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -199,6 +200,23 @@ h2 {
   border-radius: 8px;
   padding: 0 10px;
   color: var(--muted);
+  background: #fbfcfe;
+}
+
+.field-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+select {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--text);
   background: #fbfcfe;
 }
 

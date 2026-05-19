@@ -236,6 +236,7 @@ function normalizeUpdateOptions(options) {
     updateImage: options.updateImage,
     loaderSource: normalizeSource(options.loaderSource, 'loaderSource'),
     imageSource: normalizeSource(options.imageSource, 'imageSource'),
+    loaderChoiceId: typeof options.loaderChoiceId === 'string' ? options.loaderChoiceId : '',
     loaderPath: typeof options.loaderPath === 'string' ? options.loaderPath : '',
     imagePath: typeof options.imagePath === 'string' ? options.imagePath : ''
   };
@@ -320,10 +321,17 @@ function isSafeExternalUrl(url) {
 }
 
 function publicConfig(config) {
+  const loaderChoices = Array.isArray(config?.loader?.choices) ? config.loader.choices : [];
   return {
     documentationUrl: config?.documentationUrl || '',
     loader: {
-      url: config?.loader?.url || ''
+      url: config?.loader?.url || '',
+      choices: loaderChoices.map((choice) => ({
+        id: choice.id || '',
+        label: choice.label || choice.assetName || choice.url || '',
+        assetName: choice.assetName || '',
+        url: choice.url || ''
+      }))
     },
     image: {
       url: config?.image?.url || '',

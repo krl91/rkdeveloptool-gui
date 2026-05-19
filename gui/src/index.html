@@ -42,8 +42,10 @@
             </label>
             <div class="segmented" role="group" aria-label="Source loader">
               <label><input type="radio" name="loaderSource" value="online" checked><span>Online</span></label>
-              <label><input type="radio" name="loaderSource" value="local"><span>Local</span></label>
+              <label><input type="radio" name="loaderSource" value="local"><span>Manual</span></label>
             </div>
+            <label class="field-label" for="loaderChoice">Loader type</label>
+            <select id="loaderChoice"></select>
             <div class="file-row">
               <input id="loaderPath" type="text" readonly placeholder="No local file">
               <button id="chooseLoader" class="secondary" type="button">Choose</button>

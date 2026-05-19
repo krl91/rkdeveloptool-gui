@@ -288,10 +288,12 @@ directory, in the Electron user data directory, or by setting:
 
 	RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 
-The firmware release page URL, GitHub API URL, loader URL, image URL, asset
-names, image LBA, online user guide URL, application self-update settings, and
-network timeouts are configurable. Online firmware and application update
-downloads are verified with SHA256 before use.
+The firmware release page URL, GitHub API URL, loader URL, loader choices,
+image URL, asset names, image LBA, online user guide URL, application
+self-update settings, and network timeouts are configurable. Online GitHub
+release assets and application update downloads are verified with SHA256 before
+use. Direct loader URLs without a published expected checksum are downloaded
+with their calculated SHA256 logged for traceability.
 
 Default network timeout values are intentionally large:
 

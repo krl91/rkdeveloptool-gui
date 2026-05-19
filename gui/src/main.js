@@ -200,6 +200,30 @@ async function resolveOnlineAsset(kind) {
   };
 }
 
+function configuredLoaderChoice(choiceId) {
+  const choices = Array.isArray(appState.config?.loader?.choices) ? appState.config.loader.choices : [];
+  return choices.find((choice) => choice.id === choiceId) || null;
+}
+
+async function resolveLoaderAsset(options = {}) {
+  const choice = configuredLoaderChoice(options.loaderChoiceId);
+  if (!choice) {
+    return resolveOnlineAsset('loader');
+  }
+  if (!isSafeExternalUrl(choice.url)) {
+    throw new Error(`Invalid loader URL for ${choice.label || choice.id}.`);
+  }
+  return {
+    name: choice.assetName || path.basename(new URL(choice.url).pathname),
+    url: choice.url,
+    sha256: choice.sha256 || ''
+  };
+}
+
+async function prepareOnlineLoader(options = {}) {
+  return downloadAndVerify(await resolveLoaderAsset(options));
+}
+
 async function downloadAndVerify(asset) {
   const downloadDir = path.join(app.getPath('userData'), 'downloads');
   fs.mkdirSync(downloadDir, { recursive: true });
@@ -249,12 +273,16 @@ async function downloadAndVerify(asset) {
 
     await new Promise((resolve, reject) => writer.end((error) => error ? reject(error) : resolve()));
     const actual = hash.digest('hex');
-    if (actual !== asset.sha256) {
+    if (asset.sha256 && actual !== asset.sha256) {
       fs.rmSync(tempDestination, { force: true });
       throw new Error(`Invalid SHA256 for ${asset.name}: ${actual}`);
     }
     fs.renameSync(tempDestination, destination);
-    emit('log', { line: `SHA256 OK ${asset.name}: ${actual}` });
+    if (asset.sha256) {
+      emit('log', { line: `SHA256 OK ${asset.name}: ${actual}` });
+    } else {
+      emit('log', { line: `SHA256 ${asset.name}: ${actual} (no expected checksum configured)` });
+    }
     return destination;
   } catch (error) {
     await cleanupTempDownload(writer, tempDestination);
@@ -292,10 +320,18 @@ async function prepareFile(kind, source, localPath) {
 }
 
 function implicitLoaderOptions(options) {
-  if (options.loaderSource === 'local' && options.loaderPath) {
-    return { source: 'local', path: options.loaderPath };
+  return {
+    source: options.loaderSource === 'local' && options.loaderPath ? 'local' : 'online',
+    path: options.loaderSource === 'local' && options.loaderPath ? options.loaderPath : '',
+    loaderChoiceId: options.loaderChoiceId
+  };
+}
+
+async function prepareLoader(options) {
+  if (options.source === 'online') {
+    return prepareOnlineLoader(options);
   }
-  return { source: 'online', path: '' };
+  return prepareFile('loader', 'local', options.path);
 }
 
 async function writeLoader(loaderPath, progressOptions, message = 'Writing loader...') {
@@ -324,7 +360,11 @@ async function runUpdate(options) {
       };
 
       if (kind === 'loader') {
-        const loaderPath = await prepareFile('loader', options.loaderSource, options.loaderPath);
+        const loaderPath = await prepareLoader({
+          source: options.loaderSource,
+          path: options.loaderPath,
+          loaderChoiceId: options.loaderChoiceId
+        });
         await writeLoader(loaderPath, progressOptions);
         loaderLoadedThisRun = true;
       }
@@ -338,7 +378,7 @@ async function runUpdate(options) {
 
           emit('log', { line: 'Device is in Maskrom mode; loading the configured loader before writing the image.' });
           const loader = implicitLoaderOptions(options);
-          const loaderPath = await prepareFile('loader', loader.source, loader.path);
+          const loaderPath = await prepareLoader(loader);
           await writeLoader(loaderPath, {
             progressLabel: 'Loader prerequisite',
             progressOffset: 0,

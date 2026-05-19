@@ -307,6 +307,7 @@ test('normalizeUpdateOptions validates renderer-provided update options', () => 
     updateImage: false,
     loaderSource: 'local',
     imageSource: 'online',
+    loaderChoiceId: '',
     loaderPath: '/tmp/loader.bin',
     imagePath: ''
   });
@@ -364,11 +365,33 @@ test('publicConfig only exposes renderer-visible values', () => {
     rkdeveloptoolPath: '/secret/tool',
     commandPrefix: ['sudo', '-n'],
     documentationUrl: 'https://docs.example/guide',
-    loader: { url: 'https://loader.example/file.bin', assetName: 'loader.bin' },
+    loader: {
+      url: 'https://loader.example/file.bin',
+      assetName: 'loader.bin',
+      choices: [
+        {
+          id: 'loader-a',
+          label: 'Loader A',
+          assetName: 'loader-a.bin',
+          url: 'https://loader.example/loader-a.bin',
+          sha256: SHA_A
+        }
+      ]
+    },
     image: { url: 'https://image.example/file.img', assetName: 'image.img', lba: 0 }
   }), {
     documentationUrl: 'https://docs.example/guide',
-    loader: { url: 'https://loader.example/file.bin' },
+    loader: {
+      url: 'https://loader.example/file.bin',
+      choices: [
+        {
+          id: 'loader-a',
+          label: 'Loader A',
+          assetName: 'loader-a.bin',
+          url: 'https://loader.example/loader-a.bin'
+        }
+      ]
+    },
     image: { url: 'https://image.example/file.img', lba: 0 }
   });
 });
@@ -404,6 +427,18 @@ test('default config keeps network timeouts configurable and large', () => {
   assert.equal(config.network.metadataTimeoutMs, 300000);
   assert.equal(config.network.downloadTimeoutMs, 7200000);
   assert.equal(config.documentationUrl, 'https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md');
+});
+
+test('default config offers Radxa RK356x loader choices and avoids u-boot as db loader', () => {
+  const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
+
+  assert.equal(config.loader.assetName, 'rk356x_spl_loader_ddr1056_v1.10.111.bin');
+  assert.equal(config.loader.choices.length, 2);
+  assert.deepEqual(config.loader.choices.map((choice) => choice.assetName), [
+    'rk356x_spl_loader_ddr1056_v1.10.111.bin',
+    'rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin'
+  ]);
+  assert.equal(config.loader.choices.some((choice) => choice.assetName === 'runcam_wifilink_u-boot.bin'), false);
 });
 
 test('default documentation link resolves to the online user guide', { timeout: 20000 }, async () => {

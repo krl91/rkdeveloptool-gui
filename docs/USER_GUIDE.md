@@ -113,11 +113,19 @@ the application always writes the loader before the image.
 
 Each firmware part has two source choices:
 
-- **Online:** download the configured file from the configured release URLs
-- **Local:** select a file already present on your computer
+- **Online:** download the configured file from the configured URLs
+- **Manual:** select a loader file already present on your computer
+- **Local:** select an image file already present on your computer
 
-Online files are verified with SHA256 before flashing. Local files are not
+For the loader, online mode provides a loader type list. The default list
+contains Radxa RK356x SPL loaders suitable for `rkdeveloptool db`, not the
+OpenIPC `u-boot.bin` file. Use **Manual** only when you already have a Rockchip
+loader file suitable for `rkdeveloptool db`.
+
+Online image files are verified with SHA256 before flashing. Local files are not
 matched against the online release checksum because they may be custom builds.
+Some direct loader URLs do not publish an expected checksum; in that case the
+application logs the calculated SHA256 for traceability.
 
 The configured default URLs are visible in the window. They can be changed by
 editing the GUI configuration file. See [GUI configuration](../README.md#gui-configuration).

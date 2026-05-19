@@ -18,8 +18,22 @@
     "linuxPackage": "deb"
   },
   "loader": {
-    "assetName": "runcam_wifilink_u-boot.bin",
-    "url": "https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_u-boot.bin"
+    "assetName": "rk356x_spl_loader_ddr1056_v1.10.111.bin",
+    "url": "https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin",
+    "choices": [
+      {
+        "id": "rk356x-v1.10.111",
+        "label": "Radxa RK356x SPL v1.10.111",
+        "assetName": "rk356x_spl_loader_ddr1056_v1.10.111.bin",
+        "url": "https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin"
+      },
+      {
+        "id": "rk356x-v1.12.109-no-check-todly",
+        "label": "Radxa RK356x SPL v1.12.109 no-check",
+        "assetName": "rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin",
+        "url": "https://dl.radxa.com/rock3/images/loader/rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin"
+      }
+    ]
   },
   "image": {
     "assetName": "runcam_wifilink_sdcard.img",

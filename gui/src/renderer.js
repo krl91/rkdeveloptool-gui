@@ -5,6 +5,7 @@ const elements = {
   quickUpdateButton: document.getElementById('quickUpdateButton'),
   updateLoader: document.getElementById('updateLoader'),
   updateImage: document.getElementById('updateImage'),
+  loaderChoice: document.getElementById('loaderChoice'),
   loaderPath: document.getElementById('loaderPath'),
   imagePath: document.getElementById('imagePath'),
   chooseLoader: document.getElementById('chooseLoader'),
@@ -50,6 +51,7 @@ function setBusy(value) {
 function updateSourceControls() {
   const loaderLocal = selectedRadio('loaderSource') === 'local';
   const imageLocal = selectedRadio('imageSource') === 'local';
+  elements.loaderChoice.disabled = busy || loaderLocal;
   elements.chooseLoader.disabled = busy || !loaderLocal;
   elements.loaderPath.disabled = !loaderLocal;
   elements.chooseImage.disabled = busy || !imageLocal;
@@ -79,6 +81,7 @@ function collectOptions() {
     updateImage: elements.updateImage.checked,
     loaderSource: selectedRadio('loaderSource'),
     imageSource: selectedRadio('imageSource'),
+    loaderChoiceId: elements.loaderChoice.value,
     loaderPath: elements.loaderPath.value,
     imagePath: elements.imagePath.value
   };
@@ -207,7 +210,17 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (state.simulation) {
     setStatus('Simulation');
   }
-  elements.loaderUrl.textContent = state.config.loader.url;
+  for (const choice of state.config.loader.choices || []) {
+    const option = document.createElement('option');
+    option.value = choice.id;
+    option.textContent = choice.label;
+    option.dataset.url = choice.url;
+    elements.loaderChoice.appendChild(option);
+  }
+  elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || state.config.loader.url;
+  elements.loaderChoice.addEventListener('change', () => {
+    elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || state.config.loader.url;
+  });
   elements.imageUrl.textContent = state.config.image.url;
   if (state.configInfo?.overrides?.length > 0) {
     elements.configBanner.hidden = false;
