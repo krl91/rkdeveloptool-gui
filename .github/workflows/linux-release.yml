@@ -38,6 +38,7 @@ jobs:
             automake \
             build-essential \
             libfuse2t64 \
+            libudev-dev \
             libusb-1.0-0-dev \
             pkg-config
 
