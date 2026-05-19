@@ -143,6 +143,9 @@ configured.
 For Windows release builds, use `.github/workflows/windows-release.yml`. It
 builds `rkdeveloptool.exe` with MSYS2 UCRT64, then produces the NSIS installer.
 
+For Linux release builds, use `.github/workflows/linux-release.yml`. It builds
+`rkdeveloptool` on Ubuntu/Debian, then produces the AppImage.
+
 For a quick unpacked build:
 
 ```bash

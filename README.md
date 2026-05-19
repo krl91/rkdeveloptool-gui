@@ -231,6 +231,10 @@ packages on tag pushes:
 		Builds the standalone rkdeveloptool.exe with MSYS2 UCRT64, then builds
 		and uploads the NSIS installer.
 
+	Linux Release
+		Builds the standalone rkdeveloptool binary on Ubuntu/Debian, then
+		builds and uploads the AppImage.
+
 The automatic test procedure is documented in the next section.
 
 

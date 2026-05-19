@@ -139,3 +139,26 @@ npm run dist:win
 The resulting NSIS installer and blockmap are uploaded as workflow artifacts and
 attached to the matching GitHub release. For manual runs, set the `tag_name`
 input to the release tag to update, for example `v0.1.2`.
+
+## Linux Release Workflow
+
+The Linux release workflow is `.github/workflows/linux-release.yml`. It runs on
+tag pushes matching `v*` and can also be started manually from GitHub Actions.
+
+The workflow uses Ubuntu/Debian packages to install Autotools, libusb, and
+AppImage runtime support, builds `rkdeveloptool` with:
+
+```bash
+./configure --enable-standalone
+make -j"$(nproc)"
+```
+
+It then runs the GUI checks and builds the AppImage with:
+
+```bash
+npm run dist:linux
+```
+
+The resulting AppImage and blockmap are uploaded as workflow artifacts and
+attached to the matching GitHub release. For manual runs, set the `tag_name`
+input to the release tag to update, for example `v0.1.2`.
