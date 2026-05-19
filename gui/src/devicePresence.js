@@ -13,6 +13,10 @@ async function detectDevices(runTool) {
   }
 }
 
+function deviceNeedsLoaderBeforeImage(device) {
+  return /maskrom/i.test(String(device?.mode || ''));
+}
+
 async function ensureDevicePresentBeforeFlash({
   actionLabel = 'flash',
   runTool,
@@ -53,5 +57,6 @@ async function ensureDevicePresentBeforeFlash({
 
 module.exports = {
   detectDevices,
+  deviceNeedsLoaderBeforeImage,
   ensureDevicePresentBeforeFlash
 };

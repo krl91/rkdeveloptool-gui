@@ -75,9 +75,16 @@ test('try-again transition stays active until the main window is ready', () => {
 });
 
 test('main process checks the USB device immediately before each flash command', () => {
-  assert.match(main, /const loaderPath = await prepareFile\('loader'[\s\S]*await ensureDeviceBeforeFlash\('loader'\);[\s\S]*await runTool\(\['db', loaderPath\]/);
-  assert.match(main, /const imagePath = await prepareFile\('image'[\s\S]*await ensureDeviceBeforeFlash\('image'\);[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\]/);
+  assert.match(main, /async function writeLoader\(loaderPath[\s\S]*await ensureDeviceBeforeFlash\('loader'\);[\s\S]*await runTool\(\['db', loaderPath\]/);
+  assert.match(main, /let device = await ensureDeviceBeforeFlash\('image'\);[\s\S]*const imagePath = await prepareFile\('image'[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\]/);
   assert.match(renderer, /if \(event\.type === 'device'\)[\s\S]*updateDeviceLine\(event\.device\);/);
+});
+
+test('main process loads a loader prerequisite before image writes from Maskrom', () => {
+  assert.match(main, /deviceNeedsLoaderBeforeImage\(device\)/);
+  assert.match(main, /Device is in Maskrom mode; loading the configured loader before writing the image\./);
+  assert.match(main, /await writeLoader\(loaderPath,[\s\S]*'Loading loader before image\.\.\.'\);/);
+  assert.match(main, /The device is still in Maskrom after loading the loader/);
 });
 
 test('custom configuration banner is present and hidden by default', () => {

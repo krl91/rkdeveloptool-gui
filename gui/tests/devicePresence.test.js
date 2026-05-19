@@ -1,7 +1,11 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
-const { detectDevices, ensureDevicePresentBeforeFlash } = require('../src/devicePresence');
+const {
+  detectDevices,
+  deviceNeedsLoaderBeforeImage,
+  ensureDevicePresentBeforeFlash
+} = require('../src/devicePresence');
 
 const DEVICE_LINE = 'DevNo=1\tVid=0x2207,Pid=0x320a,LocationID=141\tMaskrom';
 
@@ -74,4 +78,12 @@ test('ensureDevicePresentBeforeFlash cancels when the user closes the no-device 
     chooseNoDeviceAction: async () => 'close',
     setDevice: () => {}
   }), /Update canceled/);
+});
+
+test('deviceNeedsLoaderBeforeImage only requires a loader for Maskrom devices', () => {
+  assert.equal(deviceNeedsLoaderBeforeImage({ mode: 'Maskrom' }), true);
+  assert.equal(deviceNeedsLoaderBeforeImage({ mode: 'maskrom' }), true);
+  assert.equal(deviceNeedsLoaderBeforeImage({ mode: 'Loader' }), false);
+  assert.equal(deviceNeedsLoaderBeforeImage({ mode: 'Simulation' }), false);
+  assert.equal(deviceNeedsLoaderBeforeImage(null), false);
 });

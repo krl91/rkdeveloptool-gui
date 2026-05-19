@@ -28,6 +28,7 @@ const { createSimulationRunner } = require('./simulationRunner');
 const { createToolRunner } = require('./toolRunner');
 const {
   detectDevices,
+  deviceNeedsLoaderBeforeImage,
   ensureDevicePresentBeforeFlash
 } = require('./devicePresence');
 const {
@@ -290,6 +291,19 @@ async function prepareFile(kind, source, localPath) {
   return localPath;
 }
 
+function implicitLoaderOptions(options) {
+  if (options.loaderSource === 'local' && options.loaderPath) {
+    return { source: 'local', path: options.loaderPath };
+  }
+  return { source: 'online', path: '' };
+}
+
+async function writeLoader(loaderPath, progressOptions, message = 'Writing loader...') {
+  await ensureDeviceBeforeFlash('loader');
+  emit('status', { message });
+  await runTool(['db', loaderPath], progressOptions);
+}
+
 async function runUpdate(options) {
   if (appState.busy) {
     throw new Error('An update is already running.');
@@ -300,6 +314,7 @@ async function runUpdate(options) {
 
   try {
     const plan = plannedUpdateKinds(options);
+    let loaderLoadedThisRun = false;
 
     for (const [index, kind] of plan.entries()) {
       const progressOptions = {
@@ -310,14 +325,34 @@ async function runUpdate(options) {
 
       if (kind === 'loader') {
         const loaderPath = await prepareFile('loader', options.loaderSource, options.loaderPath);
-        await ensureDeviceBeforeFlash('loader');
-        emit('status', { message: 'Writing loader...' });
-        await runTool(['db', loaderPath], progressOptions);
+        await writeLoader(loaderPath, progressOptions);
+        loaderLoadedThisRun = true;
       }
 
       if (kind === 'image') {
+        let device = await ensureDeviceBeforeFlash('image');
+        if (deviceNeedsLoaderBeforeImage(device)) {
+          if (loaderLoadedThisRun) {
+            throw new Error('The device is still in Maskrom after loading the loader. Re-enter flashing mode and try again.');
+          }
+
+          emit('log', { line: 'Device is in Maskrom mode; loading the configured loader before writing the image.' });
+          const loader = implicitLoaderOptions(options);
+          const loaderPath = await prepareFile('loader', loader.source, loader.path);
+          await writeLoader(loaderPath, {
+            progressLabel: 'Loader prerequisite',
+            progressOffset: 0,
+            progressScale: 0
+          }, 'Loading loader before image...');
+          loaderLoadedThisRun = true;
+
+          device = await ensureDeviceBeforeFlash('image');
+          if (deviceNeedsLoaderBeforeImage(device)) {
+            throw new Error('The device is still in Maskrom after loading the loader. Re-enter flashing mode and try again.');
+          }
+        }
+
         const imagePath = await prepareFile('image', options.imageSource, options.imagePath);
-        await ensureDeviceBeforeFlash('image');
         emit('status', { message: 'Writing image...' });
         await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
       }
