@@ -237,6 +237,7 @@ function normalizeUpdateOptions(options) {
     loaderSource: normalizeSource(options.loaderSource, 'loaderSource'),
     imageSource: normalizeSource(options.imageSource, 'imageSource'),
     loaderChoiceId: typeof options.loaderChoiceId === 'string' ? options.loaderChoiceId : '',
+    loaderChoiceLabel: typeof options.loaderChoiceLabel === 'string' ? options.loaderChoiceLabel : '',
     loaderPath: typeof options.loaderPath === 'string' ? options.loaderPath : '',
     imagePath: typeof options.imagePath === 'string' ? options.imagePath : ''
   };
@@ -250,7 +251,10 @@ function describeUpdatePlan(options) {
   return kinds.map((kind) => {
     const source = normalized[`${kind}Source`] === 'online' ? 'latest online file' : 'local file';
     if (kind === 'loader') {
-      return `1. Load the Maskrom loader from the ${source}`;
+      const detail = normalized.loaderSource === 'online' && normalized.loaderChoiceLabel
+        ? ` (${normalized.loaderChoiceLabel})`
+        : '';
+      return `1. Load the Maskrom loader from the ${source}${detail}`;
     }
     return `${kinds.indexOf(kind) + 1}. Write the image from the ${source}`;
   });

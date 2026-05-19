@@ -628,6 +628,9 @@ ipcMain.handle('app:confirmUpdate', async (_event, options) => {
       ...lines,
       '',
       'The Maskrom loader is loaded before writing the complete image.',
+      ...(normalizedOptions.loaderSource === 'online' && normalizedOptions.loaderChoiceLabel
+        ? [`Selected Maskrom loader: ${normalizedOptions.loaderChoiceLabel}`]
+        : []),
       `Release API host: ${sources.releaseApiHost || 'not configured'}`,
       `Maskrom loader host: ${sources.loaderHost || 'not configured'}`,
       `Image host: ${sources.imageHost || 'not configured'}`,

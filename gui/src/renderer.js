@@ -82,6 +82,7 @@ function collectOptions() {
     loaderSource: selectedRadio('loaderSource'),
     imageSource: selectedRadio('imageSource'),
     loaderChoiceId: elements.loaderChoice.value,
+    loaderChoiceLabel: elements.loaderChoice.selectedOptions[0]?.textContent || '',
     loaderPath: elements.loaderPath.value,
     imagePath: elements.imagePath.value
   };

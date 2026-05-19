@@ -38,6 +38,7 @@ test('loader card exposes preset loader choices plus manual local mode', () => {
   assert.match(html, /id="loaderChoice"/);
   assert.match(html, /<span>Manual<\/span>/);
   assert.match(renderer, /loaderChoiceId: elements\.loaderChoice\.value/);
+  assert.match(renderer, /loaderChoiceLabel: elements\.loaderChoice\.selectedOptions\[0\]\?\.textContent/);
   assert.match(renderer, /state\.config\.loader\.choices/);
   assert.match(renderer, /option\.dataset\.url = choice\.url/);
 });

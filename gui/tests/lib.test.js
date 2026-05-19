@@ -308,6 +308,7 @@ test('normalizeUpdateOptions validates renderer-provided update options', () => 
     loaderSource: 'local',
     imageSource: 'online',
     loaderChoiceId: '',
+    loaderChoiceLabel: '',
     loaderPath: '/tmp/loader.bin',
     imagePath: ''
   });
@@ -338,9 +339,10 @@ test('describeUpdatePlan explains exactly what will happen before flashing', () 
     updateLoader: true,
     updateImage: true,
     loaderSource: 'online',
+    loaderChoiceLabel: 'Radxa RK356x SPL v1.10.111',
     imageSource: 'local'
   }), [
-    '1. Load the Maskrom loader from the latest online file',
+    '1. Load the Maskrom loader from the latest online file (Radxa RK356x SPL v1.10.111)',
     '2. Write the image from the local file'
   ]);
 });
