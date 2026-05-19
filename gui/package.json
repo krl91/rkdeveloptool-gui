@@ -15,6 +15,7 @@
     "stage:rkdeveloptool": "node scripts/stage-rkdeveloptool.js",
     "dist": "npm run stage:rkdeveloptool && electron-builder",
     "dist:mac": "npm run stage:rkdeveloptool && electron-builder --mac",
+    "dist:win": "npm run stage:rkdeveloptool && electron-builder --win",
     "dist:dir": "npm run stage:rkdeveloptool && electron-builder --dir"
   },
   "devDependencies": {

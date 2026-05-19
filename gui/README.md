@@ -136,9 +136,12 @@ Build packages on the target OS:
 - Windows: produces an NSIS installer
 
 For macOS distribution outside a development machine, use the repository
-workflow `.github/workflows/macos-release.yml`. It expects the signing and
-notarization secrets documented in `../CONTRIBUTING.md`, then produces a signed
-and notarized DMG artifact.
+workflow `.github/workflows/macos-release.yml`. It produces an ad hoc signed DMG
+when Apple secrets are absent, or a signed and notarized DMG when they are
+configured.
+
+For Windows release builds, use `.github/workflows/windows-release.yml`. It
+builds `rkdeveloptool.exe` with MSYS2 UCRT64, then produces the NSIS installer.
 
 For a quick unpacked build:
 

@@ -121,3 +121,21 @@ The Electron macOS build uses hardened runtime and the entitlements in
 `gui/build/entitlements.mac.plist` and
 `gui/build/entitlements.mac.inherit.plist`. A project-specific icon is still
 recommended before publishing public release builds.
+
+## Windows Release Workflow
+
+The Windows release workflow is `.github/workflows/windows-release.yml`. It runs
+on tag pushes matching `v*` and can also be started manually from GitHub
+Actions.
+
+The workflow uses MSYS2 UCRT64 to install the MinGW toolchain and libusb, builds
+`rkdeveloptool.exe` with `./configure --enable-standalone`, runs the GUI checks,
+then runs:
+
+```bash
+npm run dist:win
+```
+
+The resulting NSIS installer and blockmap are uploaded as workflow artifacts and
+attached to the matching GitHub release. For manual runs, set the `tag_name`
+input to the release tag to update, for example `v0.1.2`.

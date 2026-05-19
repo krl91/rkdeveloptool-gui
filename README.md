@@ -218,11 +218,18 @@ Useful GUI make targets:
 		Remove command-line build outputs, logs, GUI build outputs, and copied
 		GUI rkdeveloptool binaries. It keeps gui/node_modules/ intact.
 
-GitHub Actions runs make gui-test on pull requests. A separate macOS release
-workflow builds a DMG on tag pushes. When Apple signing secrets are configured,
-the DMG is signed and notarized. Without those secrets, the workflow still
-builds an ad hoc signed DMG, but macOS may show a security warning on first
-launch.
+GitHub Actions runs make gui-test on pull requests. Release workflows build
+packages on tag pushes:
+
+	macOS Release
+		Builds a DMG. When Apple signing secrets are configured, the DMG is
+		signed and notarized. Without those secrets, the workflow still builds
+		an ad hoc signed DMG, but macOS may show a security warning on first
+		launch.
+
+	Windows Release
+		Builds the standalone rkdeveloptool.exe with MSYS2 UCRT64, then builds
+		and uploads the NSIS installer.
 
 The automatic test procedure is documented in the next section.
 
