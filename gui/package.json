@@ -3,6 +3,7 @@
   "version": "0.1.2",
   "description": "Cross-platform Electron GUI for rkdeveloptool firmware updates.",
   "author": "OpenIPC contributors",
+  "homepage": "https://github.com/krl91/rkdeveloptool-gui",
   "license": "GPL-2.0-only",
   "main": "src/main.js",
   "private": true,
@@ -52,6 +53,7 @@
     },
     "linux": {
       "artifactName": "RK.Firmware.Updater-${version}-${arch}.${ext}",
+      "maintainer": "OpenIPC contributors <openipc@users.noreply.github.com>",
       "target": [
         "AppImage"
       ],
