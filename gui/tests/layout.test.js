@@ -28,10 +28,15 @@ test('mobile action row stacks controls and keeps buttons accessible', () => {
   assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*button\s*\{[\s\S]*width:\s*100%;/);
 });
 
-test('quick online update button is visually marked as a warning', () => {
+test('quick full-image button is visually marked as a warning and keeps selected sources', () => {
   assert.match(html, /id="quickUpdateButton"\s+class="warning"/);
   assert.match(css, /\.warning\s*\{[\s\S]*background:\s*var\(--warning\);/);
-  assert.match(html, /Loads the Maskrom loader, then writes the complete online image\./);
+  assert.match(html, /Loads the Maskrom loader, then writes the selected complete image\./);
+  const quickHandler = renderer.match(/elements\.quickUpdateButton\.addEventListener\('click', \(\) => \{[\s\S]*?\n\}\);/)[0];
+  assert.match(quickHandler, /elements\.updateLoader\.checked = true;/);
+  assert.match(quickHandler, /elements\.updateImage\.checked = true;/);
+  assert.doesNotMatch(quickHandler, /input\[name="imageSource"\]\[value="online"\]/);
+  assert.doesNotMatch(quickHandler, /input\[name="loaderSource"\]\[value="online"\]/);
 });
 
 test('loader card exposes preset loader choices plus manual local mode', () => {

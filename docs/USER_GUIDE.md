@@ -132,17 +132,19 @@ application logs the calculated SHA256 for traceability.
 The configured default URLs are visible in the window. They can be changed by
 editing the GUI configuration file. See [GUI configuration](../README.md#gui-configuration).
 
-## One-Click Online Update
+## Full Image Flash
 
-Use **Flash full image** when you want the recommended online update in one
-action.
+Use **Flash full image** when you want to run the complete flashing sequence in
+one action. The button keeps the source choices currently selected in the GUI:
+if the image source is set to **Local**, it writes the selected local image
+instead of downloading the configured GitHub image.
 
 This button is highlighted because it performs the full update sequence:
 
-1. download the selected Radxa Maskrom loader
+1. prepare the selected Radxa Maskrom loader, online or manual
 2. load the Maskrom loader with `rkdeveloptool db`
-3. download the latest configured OpenIPC image
-4. verify the image SHA256
+3. prepare the selected complete image, online or local
+4. verify SHA256 when an expected online checksum is available, or log the local file SHA256
 5. write the complete image with `rkdeveloptool wl 0`
 
 The application asks for confirmation before it starts writing anything.

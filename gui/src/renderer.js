@@ -173,8 +173,6 @@ elements.startButton.addEventListener('click', () => runUpdate(collectOptions())
 elements.quickUpdateButton.addEventListener('click', () => {
   elements.updateLoader.checked = true;
   elements.updateImage.checked = true;
-  document.querySelector('input[name="loaderSource"][value="online"]').checked = true;
-  document.querySelector('input[name="imageSource"][value="online"]').checked = true;
   updateSourceControls();
   runUpdate(collectOptions());
 });
