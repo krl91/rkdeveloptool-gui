@@ -395,6 +395,25 @@ test('default config keeps network timeouts configurable and large', () => {
   assert.equal(config.documentationUrl, 'https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md');
 });
 
+test('default documentation link resolves to the online user guide', { timeout: 20000 }, async () => {
+  const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(config.documentationUrl, {
+      headers: { 'User-Agent': 'rkdeveloptool-gui-tests' },
+      signal: controller.signal
+    });
+    assert.equal(response.status, 200);
+    const body = await response.text();
+    assert.match(body, /RK Firmware Updater User Guide/);
+    assert.match(body, /Before You Start/);
+  } finally {
+    clearTimeout(timeout);
+  }
+});
+
 test('sha256File returns the expected digest for local firmware files', async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rk-gui-sha-'));
   const filePath = path.join(tmp, 'firmware.bin');
