@@ -91,6 +91,12 @@ The online guide opened from the GUI is configurable through
 deliberately large: 300000 ms for metadata and 7200000 ms for firmware
 downloads.
 
+The application self-update check is configured through `autoUpdate`. It can be
+disabled with `autoUpdate.enabled: false`. The updater skips the check when the
+operating system reports that the computer is offline. Application update
+downloads use `autoUpdate.downloadTimeoutMs`, and installer execution uses
+`autoUpdate.installTimeoutMs`.
+
 When a custom configuration file is loaded, the renderer shows a persistent
 warning banner. The confirmation dialog also lists the release, loader, and
 image source hosts before the update starts.

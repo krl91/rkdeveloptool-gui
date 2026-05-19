@@ -36,7 +36,7 @@ For a RunCam WiFiLink RX or OpenIPC ground station, the receiver must be in
 Rockusb/Maskrom flash mode before RK Firmware Updater starts. Use the USB-C
 data port and the recessed reset/flash button.
 
-![RunCam WiFiLink RX flash button](../gui/src/assets/runcam-wifilink-rx-flash-button.svg)
+![RunCam WiFiLink RX flash button](../gui/src/assets/runcam-wifilink-rx-flash-button.png)
 
 1. Unplug the receiver.
 2. Press and hold the reset/flash button with a paper clip, SIM eject tool, or
@@ -92,6 +92,12 @@ device line clearly says `Simulation`.
 
 Use **User guide** in the top-right corner to open the online documentation in
 your default web browser.
+
+At startup, the application can also check the GitHub release page for a newer
+RK Firmware Updater version. If your computer is offline, this check is skipped.
+When a newer version is available, the application asks before downloading the
+installer. The download is verified before the installer starts; if the download
+is partial or invalid, the current application is left unchanged.
 
 ![Main firmware update window](assets/screenshots/02-main-window.png)
 
@@ -189,7 +195,8 @@ RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 
 Configurable values include the GitHub release page, GitHub API URL, loader
 URL, image URL, asset names, image LBA, online user guide URL, and network
-timeouts.
+timeouts. Application self-update checks can also be configured or disabled
+with the `autoUpdate` section.
 
 Default network timeouts are deliberately long:
 
@@ -198,6 +205,14 @@ Default network timeouts are deliberately long:
   "network": {
     "metadataTimeoutMs": 300000,
     "downloadTimeoutMs": 7200000
+  },
+  "autoUpdate": {
+    "enabled": true,
+    "checkOnStartup": true,
+    "metadataTimeoutMs": 300000,
+    "downloadTimeoutMs": 7200000,
+    "installTimeoutMs": 1800000,
+    "linuxPackage": "deb"
   }
 }
 ```

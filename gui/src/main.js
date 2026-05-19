@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell, net } = require('electron');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -9,14 +9,12 @@ const {
   findRkdeveloptoolWithDiagnostics,
   githubApiFromReleasePage,
   describeUpdatePlan,
-  isNoDeviceOutput,
   isSafeExternalUrl,
   loadConfigFilesWithSources,
   normalizeLocalPath,
   normalizeFileKind,
   normalizeTimeoutMs,
   normalizeUpdateOptions,
-  parseDevices,
   plannedUpdateKinds,
   publicConfig,
   resolveSha256FromRelease,
@@ -28,6 +26,15 @@ const {
 } = require('./lib');
 const { createSimulationRunner } = require('./simulationRunner');
 const { createToolRunner } = require('./toolRunner');
+const {
+  detectDevices,
+  ensureDevicePresentBeforeFlash
+} = require('./devicePresence');
+const {
+  checkForAppUpdate,
+  downloadUpdateAsset,
+  installUpdate
+} = require('./updateManager');
 const {
   createMainWindow: createBrowserMainWindow,
   createNoDeviceWindow: createBrowserNoDeviceWindow
@@ -114,16 +121,27 @@ async function fetchWithTimeout(url, options = {}) {
 }
 
 async function detectSingleDevice() {
-  try {
-    const result = await runTool(['ld']);
-    return parseDevices(result.stdout);
-  } catch (error) {
-    const output = `${error.stdout || ''}\n${error.stderr || ''}\n${error.message || ''}`;
-    if (isNoDeviceOutput(output)) {
-      return [];
-    }
-    throw error;
+  return detectDevices(runTool);
+}
+
+function setActiveDevice(device, simulation) {
+  appState.device = device;
+  appState.simulation = simulation;
+  emit('device', { device, simulation });
+}
+
+async function ensureDeviceBeforeFlash(kind) {
+  if (appState.simulation) {
+    return appState.device;
   }
+
+  return ensureDevicePresentBeforeFlash({
+    actionLabel: kind === 'loader' ? 'writing loader' : 'writing image',
+    runTool,
+    chooseNoDeviceAction: showNoDeviceChoice,
+    setDevice: setActiveDevice,
+    emit
+  });
 }
 
 async function fetchJson(url) {
@@ -292,12 +310,14 @@ async function runUpdate(options) {
 
       if (kind === 'loader') {
         const loaderPath = await prepareFile('loader', options.loaderSource, options.loaderPath);
+        await ensureDeviceBeforeFlash('loader');
         emit('status', { message: 'Writing loader...' });
         await runTool(['db', loaderPath], progressOptions);
       }
 
       if (kind === 'image') {
         const imagePath = await prepareFile('image', options.imageSource, options.imagePath);
+        await ensureDeviceBeforeFlash('image');
         emit('status', { message: 'Writing image...' });
         await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
       }
@@ -312,6 +332,122 @@ async function runUpdate(options) {
   }
 }
 
+function appUpdateConfig() {
+  return appState.config?.autoUpdate || {};
+}
+
+function shouldCheckForAppUpdate() {
+  const config = appUpdateConfig();
+  return config.enabled !== false && config.checkOnStartup !== false;
+}
+
+function isOnlineForAppUpdate() {
+  return typeof net?.isOnline === 'function' ? net.isOnline() : true;
+}
+
+function scheduleAppUpdateCheck() {
+  setTimeout(() => {
+    maybeCheckForAppUpdate().catch((error) => {
+      emit('log', { line: `Application update check failed: ${error.message}` });
+    });
+  }, 1000);
+}
+
+async function maybeCheckForAppUpdate() {
+  if (!shouldCheckForAppUpdate()) {
+    emit('log', { line: 'Application update check disabled.' });
+    return;
+  }
+  const config = appUpdateConfig();
+  const isOnline = isOnlineForAppUpdate();
+  if (!isOnline) {
+    emit('log', { line: 'Application offline: skipping update check.' });
+    return;
+  }
+
+  const update = await checkForAppUpdate({
+    enabled: true,
+    isOnline,
+    currentVersion: app.getVersion(),
+    releaseApiUrl: config.releaseApiUrl,
+    platform: process.platform,
+    arch: process.arch,
+    linuxPackage: config.linuxPackage,
+    fetchImpl: fetch,
+    timeoutMs: normalizeTimeoutMs(config.metadataTimeoutMs, 300000)
+  });
+
+  if (!update.available) {
+    emit('log', { line: 'Application is up to date.' });
+    return;
+  }
+
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'question',
+    buttons: ['Update now', 'Later'],
+    defaultId: 1,
+    cancelId: 1,
+    title: 'Application update available',
+    message: `RK Firmware Updater ${update.latestVersion} is available.`,
+    detail: [
+      `Current version: ${update.currentVersion}`,
+      `Installer: ${update.asset.name}`,
+      'The installer will be downloaded and verified before it is started.'
+    ].join('\n')
+  });
+  if (result.response !== 0) return;
+
+  try {
+    await downloadAndInstallAppUpdate(update.asset);
+  } catch (error) {
+    emit('log', { line: `Application update failed: ${error.message}` });
+    await dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      buttons: ['OK'],
+      title: 'Application update failed',
+      message: 'The application update could not be installed.',
+      detail: `${error.message}\n\nThe current application was not changed.`
+    });
+  }
+}
+
+async function downloadAndInstallAppUpdate(asset) {
+  if (appState.busy) {
+    throw new Error('Cannot install an application update while another operation is running.');
+  }
+  const config = appUpdateConfig();
+  appState.busy = true;
+  emit('busy', { value: true });
+  emit('status', { message: `Downloading application update ${asset.name}...` });
+  emit('progress', { label: 'Downloading application update', value: 0 });
+
+  try {
+    const download = await downloadUpdateAsset(asset, {
+      downloadDir: path.join(app.getPath('userData'), 'app-updates'),
+      fetchImpl: fetch,
+      timeoutMs: normalizeTimeoutMs(config.downloadTimeoutMs, 7200000),
+      onProgress: (value) => emit('progress', { label: 'Downloading application update', value })
+    });
+    emit('log', { line: `Application update SHA256 OK ${path.basename(download.filePath)}: ${download.sha256}` });
+    emit('status', { message: 'Starting application update installer...' });
+    emit('progress', { label: 'Starting installer', value: 100 });
+    await installUpdate(download.filePath, {
+      platform: process.platform,
+      timeoutMs: normalizeTimeoutMs(config.installTimeoutMs, 1800000)
+    });
+    await dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      buttons: ['OK'],
+      title: 'Application update started',
+      message: 'The application update installer has been started.',
+      detail: 'Follow the installer instructions, then restart RK Firmware Updater.'
+    });
+  } finally {
+    appState.busy = false;
+    emit('busy', { value: false });
+  }
+}
+
 async function createMainWindow() {
   mainWindow = await createBrowserMainWindow({
     BrowserWindow,
@@ -320,6 +456,11 @@ async function createMainWindow() {
     shouldBlockClose: () => appState.busy,
     onBlockedClose: warnOperationInProgress
   });
+}
+
+function markMainWindowReady() {
+  appState.windowlessTransition = false;
+  scheduleAppUpdateCheck();
 }
 
 async function showNoDeviceChoice() {
@@ -463,7 +604,6 @@ async function detectDeviceWithNoDeviceWorkflow() {
 
     appState.windowlessTransition = true;
     const choice = await showNoDeviceChoice();
-    appState.windowlessTransition = false;
 
     if (choice === 'try-again') {
       continue;
@@ -491,11 +631,11 @@ app.whenReady().then(async () => {
       return;
     }
     if (devices.length === 0) {
-      appState.device = simulatedDevice();
-      appState.simulation = true;
+      setActiveDevice(simulatedDevice(), true);
       await createMainWindow();
       announceConfigSources();
       emit('log', { line: 'Simulation mode: no real device will be flashed.' });
+      markMainWindowReady();
       return;
     }
     if (devices.length > 1) {
@@ -508,10 +648,10 @@ app.whenReady().then(async () => {
       app.quit();
       return;
     }
-    appState.device = devices[0];
-    appState.simulation = false;
+    setActiveDevice(devices[0], false);
     await createMainWindow();
     announceConfigSources();
+    markMainWindowReady();
   } catch (error) {
     await dialog.showMessageBox({
       type: 'error',

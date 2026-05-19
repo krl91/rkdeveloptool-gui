@@ -25,6 +25,10 @@ let busy = false;
 let rebootAvailable = false;
 let rebootInFlight = false;
 
+function updateDeviceLine(device) {
+  elements.deviceLine.textContent = `Vid=0x${device.vid}, Pid=0x${device.pid}, LocationID=${device.locationId}, ${device.mode}`;
+}
+
 function selectedRadio(name) {
   const radio = document.querySelector(`input[name="${name}"]:checked`);
   return radio ? radio.value : 'online';
@@ -132,6 +136,12 @@ window.rkGui.onEvent((event) => {
   if (event.type === 'status') setStatus(event.message);
   if (event.type === 'progress') setProgress(event.label, event.value);
   if (event.type === 'busy') setBusy(event.value);
+  if (event.type === 'device') {
+    updateDeviceLine(event.device);
+    if (event.simulation) {
+      setStatus('Simulation');
+    }
+  }
   if (event.type === 'done') {
     appendLog(event.message);
     setStatus('Done', 'ok');
@@ -193,7 +203,7 @@ elements.documentationButton.addEventListener('click', async () => {
 window.addEventListener('DOMContentLoaded', async () => {
   const state = await window.rkGui.getInitialState();
   const device = state.device;
-  elements.deviceLine.textContent = `Vid=0x${device.vid}, Pid=0x${device.pid}, LocationID=${device.locationId}, ${device.mode}`;
+  updateDeviceLine(device);
   if (state.simulation) {
     setStatus('Simulation');
   }

@@ -41,7 +41,7 @@ test('renderer document declares a restrictive content security policy', () => {
 });
 
 test('no-device screen shows the RunCam flash-button image and simulation action', () => {
-  assert.match(noDeviceHtml, /runcam-wifilink-rx-flash-button\.svg/);
+  assert.match(noDeviceHtml, /runcam-wifilink-rx-flash-button\.(svg|png)/);
   assert.match(noDeviceHtml, /No Rockusb device was detected/);
   assert.match(noDeviceHtml, /USB-C data cable/);
   assert.match(noDeviceHtml, /reset\/flash button/);
@@ -66,6 +66,18 @@ test('simulation choice keeps the app alive while switching windows', () => {
   assert.match(main, /choice === 'try-again'/);
   assert.match(main, /continue;/);
   assert.match(main, /if \(appState\.windowlessTransition\)\s*\{\s*return;\s*\}/);
+});
+
+test('try-again transition stays active until the main window is ready', () => {
+  assert.match(main, /function markMainWindowReady\(\)\s*\{[\s\S]*appState\.windowlessTransition\s*=\s*false;/);
+  assert.doesNotMatch(main, /const choice = await showNoDeviceChoice\(\);\s*appState\.windowlessTransition\s*=\s*false;/);
+  assert.match(main, /await createMainWindow\(\);\s*announceConfigSources\(\);\s*markMainWindowReady\(\);/);
+});
+
+test('main process checks the USB device immediately before each flash command', () => {
+  assert.match(main, /const loaderPath = await prepareFile\('loader'[\s\S]*await ensureDeviceBeforeFlash\('loader'\);[\s\S]*await runTool\(\['db', loaderPath\]/);
+  assert.match(main, /const imagePath = await prepareFile\('image'[\s\S]*await ensureDeviceBeforeFlash\('image'\);[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\]/);
+  assert.match(renderer, /if \(event\.type === 'device'\)[\s\S]*updateDeviceLine\(event\.device\);/);
 });
 
 test('custom configuration banner is present and hidden by default', () => {

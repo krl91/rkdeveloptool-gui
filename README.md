@@ -289,13 +289,24 @@ directory, in the Electron user data directory, or by setting:
 	RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 
 The firmware release page URL, GitHub API URL, loader URL, image URL, asset
-names, image LBA, online user guide URL, and network timeouts are
-configurable. Online downloads are verified with SHA256 before flashing.
+names, image LBA, online user guide URL, application self-update settings, and
+network timeouts are configurable. Online firmware and application update
+downloads are verified with SHA256 before use.
 
 Default network timeout values are intentionally large:
 
 	network.metadataTimeoutMs = 300000
 	network.downloadTimeoutMs = 7200000
+	autoUpdate.metadataTimeoutMs = 300000
+	autoUpdate.downloadTimeoutMs = 7200000
+	autoUpdate.installTimeoutMs = 1800000
+
+The application update check can be disabled with:
+
+	autoUpdate.enabled = false
+
+When the operating system reports that the computer is offline, the application
+does not attempt the update network check at startup.
 
 If a custom configuration file is loaded, the GUI shows a permanent warning
 banner and the confirmation dialog lists the active release, loader, and image
@@ -307,7 +318,7 @@ USB Notes
 
 RunCam WiFiLink RX / OpenIPC ground stations:
 
-![RunCam WiFiLink RX flash button](gui/src/assets/runcam-wifilink-rx-flash-button.svg)
+![RunCam WiFiLink RX flash button](gui/src/assets/runcam-wifilink-rx-flash-button.png)
 
 	Before starting RK Firmware Updater, put the receiver in Rockusb/Maskrom
 	flash mode. Connect the USB-C data cable while holding the recessed

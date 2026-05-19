@@ -8,6 +8,15 @@
     "metadataTimeoutMs": 300000,
     "downloadTimeoutMs": 7200000
   },
+  "autoUpdate": {
+    "enabled": true,
+    "checkOnStartup": true,
+    "releaseApiUrl": "https://api.github.com/repos/krl91/rkdeveloptool-gui/releases/latest",
+    "metadataTimeoutMs": 300000,
+    "downloadTimeoutMs": 7200000,
+    "installTimeoutMs": 1800000,
+    "linuxPackage": "deb"
+  },
   "loader": {
     "assetName": "runcam_wifilink_u-boot.bin",
     "url": "https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_u-boot.bin"

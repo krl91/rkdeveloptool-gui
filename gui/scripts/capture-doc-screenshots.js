@@ -9,7 +9,7 @@ const guiRoot = path.resolve(__dirname, '..');
 const outputDir = path.join(repoRoot, 'docs', 'assets', 'screenshots');
 const css = fs.readFileSync(path.join(guiRoot, 'src', 'styles.css'), 'utf8');
 const { noDeviceHelpDetail } = require('../src/lib');
-const flashButtonImageUrl = pathToFileURL(path.join(guiRoot, 'src', 'assets', 'runcam-wifilink-rx-flash-button.svg')).href;
+const flashButtonImageUrl = pathToFileURL(path.join(guiRoot, 'src', 'assets', 'runcam-wifilink-rx-flash-button.png')).href;
 const loaderUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_u-boot.bin';
 const imageUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_sdcard.img';
 
