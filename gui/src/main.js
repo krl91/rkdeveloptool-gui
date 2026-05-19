@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -10,6 +10,7 @@ const {
   githubApiFromReleasePage,
   describeUpdatePlan,
   isNoDeviceOutput,
+  isSafeExternalUrl,
   loadConfigFilesWithSources,
   normalizeLocalPath,
   normalizeFileKind,
@@ -327,6 +328,15 @@ ipcMain.handle('app:getInitialState', () => ({
   platform: os.platform(),
   simulation: appState.simulation
 }));
+
+ipcMain.handle('app:openDocumentation', async () => {
+  const url = appState.config?.documentationUrl;
+  if (!isSafeExternalUrl(url)) {
+    throw new Error('No valid documentation URL is configured.');
+  }
+  await shell.openExternal(url);
+  return { ok: true };
+});
 
 ipcMain.handle('app:chooseFile', async (_event, kind) => {
   const normalizedKind = normalizeFileKind(kind);

@@ -16,6 +16,7 @@ const {
   findRkdeveloptoolWithDiagnostics,
   githubApiFromReleasePage,
   isNoDeviceOutput,
+  isSafeExternalUrl,
   isSimulatedDevice,
   loadConfigFiles,
   loadConfigFilesWithSources,
@@ -351,12 +352,21 @@ test('publicConfig only exposes renderer-visible values', () => {
   assert.deepEqual(publicConfig({
     rkdeveloptoolPath: '/secret/tool',
     commandPrefix: ['sudo', '-n'],
+    documentationUrl: 'https://docs.example/guide',
     loader: { url: 'https://loader.example/file.bin', assetName: 'loader.bin' },
     image: { url: 'https://image.example/file.img', assetName: 'image.img', lba: 0 }
   }), {
+    documentationUrl: 'https://docs.example/guide',
     loader: { url: 'https://loader.example/file.bin' },
     image: { url: 'https://image.example/file.img', lba: 0 }
   });
+});
+
+test('isSafeExternalUrl only allows https documentation links', () => {
+  assert.equal(isSafeExternalUrl('https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md'), true);
+  assert.equal(isSafeExternalUrl('http://example.com/guide'), false);
+  assert.equal(isSafeExternalUrl('file:///tmp/guide.html'), false);
+  assert.equal(isSafeExternalUrl('not-a-url'), false);
 });
 
 test('sourceSummary extracts configured source hosts for confirmation UI', () => {
@@ -382,6 +392,7 @@ test('default config keeps network timeouts configurable and large', () => {
   const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
   assert.equal(config.network.metadataTimeoutMs, 300000);
   assert.equal(config.network.downloadTimeoutMs, 7200000);
+  assert.equal(config.documentationUrl, 'https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md');
 });
 
 test('sha256File returns the expected digest for local firmware files', async () => {

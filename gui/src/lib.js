@@ -305,8 +305,18 @@ function urlHost(url) {
   }
 }
 
+function isSafeExternalUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
 function publicConfig(config) {
   return {
+    documentationUrl: config?.documentationUrl || '',
     loader: {
       url: config?.loader?.url || ''
     },
@@ -364,6 +374,7 @@ module.exports = {
   simulatedDevice,
   sourceSummary,
   urlHost,
+  isSafeExternalUrl,
   validateCommandPrefix,
   validateLocalPathSelection,
   sha256File

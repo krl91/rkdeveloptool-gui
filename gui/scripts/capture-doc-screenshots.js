@@ -67,7 +67,10 @@ function appBody(options = {}) {
       <h1>RK Firmware Updater</h1>
       <p id="deviceLine" class="muted">Vid=0x2207, Pid=0x320a, LocationID=SIMULATED, Simulation</p>
     </div>
-    <button id="rebootButton" class="secondary" type="button" ${rebootDisabled}>Reboot</button>
+    <div class="topbar-actions">
+      <button id="documentationButton" class="secondary" type="button">User guide</button>
+      <button id="rebootButton" class="secondary" type="button" ${rebootDisabled}>Reboot</button>
+    </div>
   </header>
 
   <section class="panel controls">

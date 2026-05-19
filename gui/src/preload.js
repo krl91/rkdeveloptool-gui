@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('rkGui', {
   confirmReboot: () => ipcRenderer.invoke('app:confirmReboot'),
   startUpdate: (options) => ipcRenderer.invoke('app:startUpdate', options),
   reboot: () => ipcRenderer.invoke('app:reboot'),
+  openDocumentation: () => ipcRenderer.invoke('app:openDocumentation'),
   onEvent: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on('app:event', listener);

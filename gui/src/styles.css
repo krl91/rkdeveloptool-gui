@@ -50,6 +50,12 @@ input {
   min-height: 72px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 h1,
 h2,
 p {
@@ -332,6 +338,11 @@ pre {
   .topbar,
   .section-header {
     display: grid;
+  }
+
+  .topbar-actions {
+    display: grid;
+    gap: 8px;
   }
 
   .quick-update {

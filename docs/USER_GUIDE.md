@@ -63,6 +63,9 @@ USB devices such as keyboards, mice, storage devices, or debug adapters.
 The top of the window shows the detected USB device. In simulation mode, the
 device line clearly says `Simulation`.
 
+Use **User guide** in the top-right corner to open the online documentation in
+your default web browser.
+
 ![Main firmware update window](assets/screenshots/02-main-window.png)
 
 The **Update** section contains two independent firmware parts:
@@ -158,7 +161,8 @@ RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 ```
 
 Configurable values include the GitHub release page, GitHub API URL, loader
-URL, image URL, asset names, image LBA, and network timeouts.
+URL, image URL, asset names, image LBA, online user guide URL, and network
+timeouts.
 
 Default network timeouts are deliberately long:
 

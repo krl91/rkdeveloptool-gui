@@ -1,5 +1,6 @@
 const elements = {
   deviceLine: document.getElementById('deviceLine'),
+  documentationButton: document.getElementById('documentationButton'),
   rebootButton: document.getElementById('rebootButton'),
   quickUpdateButton: document.getElementById('quickUpdateButton'),
   updateLoader: document.getElementById('updateLoader'),
@@ -177,6 +178,15 @@ elements.rebootButton.addEventListener('click', async () => {
   } finally {
     rebootInFlight = false;
     updateRebootButton();
+  }
+});
+
+elements.documentationButton.addEventListener('click', async () => {
+  try {
+    await window.rkGui.openDocumentation();
+  } catch (error) {
+    setStatus('Error', 'error');
+    appendLog(error.message);
   }
 });
 

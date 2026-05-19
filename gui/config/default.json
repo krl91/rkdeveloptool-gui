@@ -3,6 +3,7 @@
   "commandPrefix": [],
   "releasePageUrl": "https://github.com/OpenIPC/sbc-groundstations/releases/tag/buildroot-snapshot",
   "releaseApiUrl": "https://api.github.com/repos/OpenIPC/sbc-groundstations/releases/tags/buildroot-snapshot",
+  "documentationUrl": "https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md",
   "network": {
     "metadataTimeoutMs": 300000,
     "downloadTimeoutMs": 7200000

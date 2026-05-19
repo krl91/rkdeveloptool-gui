@@ -85,9 +85,11 @@ app reads the release metadata, finds the requested asset, and verifies the
 download with the SHA256 digest published by GitHub. If the digest is not
 available, it searches a checksum asset or the release body.
 
-Network timeouts are configurable through `network.metadataTimeoutMs` and
-`network.downloadTimeoutMs`. Defaults are deliberately large: 300000 ms for
-metadata and 7200000 ms for firmware downloads.
+The online guide opened from the GUI is configurable through
+`documentationUrl`. Network timeouts are configurable through
+`network.metadataTimeoutMs` and `network.downloadTimeoutMs`. Defaults are
+deliberately large: 300000 ms for metadata and 7200000 ms for firmware
+downloads.
 
 When a custom configuration file is loaded, the renderer shows a persistent
 warning banner. The confirmation dialog also lists the release, loader, and

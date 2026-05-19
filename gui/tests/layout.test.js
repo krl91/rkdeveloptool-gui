@@ -43,6 +43,12 @@ test('custom configuration banner is present and hidden by default', () => {
   assert.match(css, /\.config-banner\s*\{[\s\S]*background:\s*var\(--warning-bg\);/);
 });
 
+test('header exposes a user guide button wired to the main process', () => {
+  assert.match(html, /id="documentationButton"[\s\S]*User guide/);
+  assert.match(css, /\.topbar-actions\s*\{[\s\S]*display:\s*flex;/);
+  assert.match(renderer, /window\.rkGui\.openDocumentation\(\)/);
+});
+
 test('renderer protects reboot against duplicate clicks', () => {
   assert.match(renderer, /let rebootInFlight = false;/);
   assert.match(renderer, /if \(rebootInFlight\) return;/);
