@@ -85,6 +85,12 @@ jobs:
               --title "RK Firmware Updater ${RELEASE_TAG#v}" \
               --notes "Linux AppImage release."
           fi
-          gh release upload "$RELEASE_TAG" dist/*.AppImage dist/*.AppImage.blockmap \
+          shopt -s nullglob
+          files=(dist/*.AppImage dist/*.AppImage.blockmap)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No Linux release artifacts found in gui/dist"
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "${files[@]}" \
             --repo "$GITHUB_REPOSITORY" \
             --clobber
