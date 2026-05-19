@@ -30,6 +30,7 @@ const {
   publicConfig,
   readJson,
   resolveSha256FromRelease,
+  shouldHashLocalFile,
   sourceSummary,
   validateCommandPrefix,
   validateLocalPathSelection,
@@ -338,6 +339,12 @@ test('local file paths must come from the file picker allow-list', () => {
   assert.equal(validateLocalPathSelection('loader', '/tmp/loader.bin', allowed), '/tmp/loader.bin');
   assert.throws(() => validateLocalPathSelection('loader', '', allowed), /No local file selected/);
   assert.throws(() => validateLocalPathSelection('image', '/tmp/other.img', allowed), /file picker/);
+});
+
+test('simulation mode skips local file hashing to avoid blocking on large images', () => {
+  assert.equal(shouldHashLocalFile({ simulation: true }), false);
+  assert.equal(shouldHashLocalFile({ simulation: false }), true);
+  assert.equal(shouldHashLocalFile(), true);
 });
 
 test('publicConfig only exposes renderer-visible values', () => {

@@ -21,6 +21,7 @@ const {
   resolveSha256FromRelease,
   simulatedDevice,
   sha256File,
+  shouldHashLocalFile,
   sourceSummary,
   validateLocalPathSelection
 } = require('./lib');
@@ -257,6 +258,10 @@ async function prepareFile(kind, source, localPath) {
     return downloadAndVerify(asset);
   }
   validateLocalPathSelection(kind, localPath, appState.allowedLocalPaths);
+  if (!shouldHashLocalFile({ simulation: appState.simulation })) {
+    emit('log', { line: `Simulation: skipping local SHA256 for ${path.basename(localPath)}.` });
+    return localPath;
+  }
   const digest = await sha256File(localPath);
   emit('log', { line: `Local SHA256 ${path.basename(localPath)}: ${digest}` });
   return localPath;

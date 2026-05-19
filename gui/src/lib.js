@@ -293,6 +293,10 @@ function validateLocalPathSelection(kind, localPath, allowedLocalPaths) {
   return localPath;
 }
 
+function shouldHashLocalFile(options = {}) {
+  return !options.simulation;
+}
+
 function urlHost(url) {
   try {
     return new URL(url).host;
@@ -356,6 +360,7 @@ module.exports = {
   publicConfig,
   readJson,
   resolveSha256FromRelease,
+  shouldHashLocalFile,
   simulatedDevice,
   sourceSummary,
   urlHost,
