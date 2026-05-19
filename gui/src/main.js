@@ -341,6 +341,12 @@ async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskr
   await runTool(['db', loaderPath], progressOptions);
 }
 
+function logMaskromAfterSuccessfulLoader() {
+  emit('log', {
+    line: 'The device still reports Maskrom after loading the loader; continuing because rkdeveloptool reported the loader was loaded successfully.'
+  });
+}
+
 async function runUpdate(options) {
   if (appState.busy) {
     throw new Error('An update is already running.');
@@ -374,22 +380,22 @@ async function runUpdate(options) {
         let device = await ensureDeviceBeforeFlash('image');
         if (deviceNeedsLoaderBeforeImage(device)) {
           if (loaderLoadedThisRun) {
-            throw new Error('The device is still in Maskrom after loading the loader. Re-enter flashing mode and try again.');
-          }
+            logMaskromAfterSuccessfulLoader();
+          } else {
+            emit('log', { line: 'Device is in Maskrom mode; loading the configured Maskrom loader before writing the image.' });
+            const loader = implicitLoaderOptions(options);
+            const loaderPath = await prepareLoader(loader);
+            await writeLoader(loaderPath, {
+              progressLabel: 'Maskrom loader prerequisite',
+              progressOffset: 0,
+              progressScale: 0
+            }, 'Loading Maskrom loader before image...');
+            loaderLoadedThisRun = true;
 
-          emit('log', { line: 'Device is in Maskrom mode; loading the configured Maskrom loader before writing the image.' });
-          const loader = implicitLoaderOptions(options);
-          const loaderPath = await prepareLoader(loader);
-          await writeLoader(loaderPath, {
-            progressLabel: 'Maskrom loader prerequisite',
-            progressOffset: 0,
-            progressScale: 0
-          }, 'Loading Maskrom loader before image...');
-          loaderLoadedThisRun = true;
-
-          device = await ensureDeviceBeforeFlash('image');
-          if (deviceNeedsLoaderBeforeImage(device)) {
-            throw new Error('The device is still in Maskrom after loading the loader. Re-enter flashing mode and try again.');
+            device = await ensureDeviceBeforeFlash('image');
+            if (deviceNeedsLoaderBeforeImage(device)) {
+              logMaskromAfterSuccessfulLoader();
+            }
           }
         }
 

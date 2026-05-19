@@ -93,7 +93,8 @@ test('main process loads a loader prerequisite before image writes from Maskrom'
   assert.match(main, /deviceNeedsLoaderBeforeImage\(device\)/);
   assert.match(main, /Device is in Maskrom mode; loading the configured Maskrom loader before writing the image\./);
   assert.match(main, /await writeLoader\(loaderPath,[\s\S]*'Loading Maskrom loader before image\.\.\.'\);/);
-  assert.match(main, /The device is still in Maskrom after loading the loader/);
+  assert.match(main, /still reports Maskrom after loading the loader; continuing because rkdeveloptool reported the loader was loaded successfully/);
+  assert.doesNotMatch(main, /The device is still in Maskrom after loading the loader/);
 });
 
 test('custom configuration banner is present and hidden by default', () => {
