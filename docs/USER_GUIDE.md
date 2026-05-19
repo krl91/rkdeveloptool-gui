@@ -101,13 +101,15 @@ is partial or invalid, the current application is left unchanged.
 
 ![Main firmware update window](assets/screenshots/02-main-window.png)
 
-The **Update** section contains two independent firmware parts:
+The **Update** section contains the two parts used by the full Maskrom flash
+workflow:
 
-- **Loader:** written first with `rkdeveloptool db <loader>`
-- **Image:** written after the loader with `rkdeveloptool wl 0 <image>`
+- **Maskrom loader:** loaded first with `rkdeveloptool db <radxa-spl-loader>`
+- **Image:** complete OpenIPC image written with `rkdeveloptool wl 0 <image>`
 
-You can update only the loader, only the image, or both. When both are selected,
-the application always writes the loader before the image.
+For the normal full-image workflow, keep both selected. If the image is selected
+while the device is still in Maskrom mode, the application loads the configured
+Maskrom loader before writing the image.
 
 ## Choose Online Or Local Files
 
@@ -117,7 +119,7 @@ Each firmware part has two source choices:
 - **Manual:** select a loader file already present on your computer
 - **Local:** select an image file already present on your computer
 
-For the loader, online mode provides a loader type list. The default list
+For the Maskrom loader, online mode provides a loader type list. The default list
 contains Radxa RK356x SPL loaders suitable for `rkdeveloptool db`, not the
 OpenIPC `u-boot.bin` file. Use **Manual** only when you already have a Rockchip
 loader file suitable for `rkdeveloptool db`.
@@ -132,17 +134,16 @@ editing the GUI configuration file. See [GUI configuration](../README.md#gui-con
 
 ## One-Click Online Update
 
-Use **Latest loader + image** when you want the recommended online update in
-one action.
+Use **Flash full image** when you want the recommended online update in one
+action.
 
 This button is highlighted because it performs the full update sequence:
 
-1. download the latest configured loader
-2. verify the loader SHA256
-3. write the loader
-4. download the latest configured image
-5. verify the image SHA256
-6. write the image
+1. download the selected Radxa Maskrom loader
+2. load the Maskrom loader with `rkdeveloptool db`
+3. download the latest configured OpenIPC image
+4. verify the image SHA256
+5. write the complete image with `rkdeveloptool wl 0`
 
 The application asks for confirmation before it starts writing anything.
 

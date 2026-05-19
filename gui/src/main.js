@@ -137,7 +137,7 @@ async function ensureDeviceBeforeFlash(kind) {
   }
 
   return ensureDevicePresentBeforeFlash({
-    actionLabel: kind === 'loader' ? 'writing loader' : 'writing image',
+    actionLabel: kind === 'loader' ? 'loading Maskrom loader' : 'writing image',
     runTool,
     chooseNoDeviceAction: showNoDeviceChoice,
     setDevice: setActiveDevice,
@@ -334,7 +334,7 @@ async function prepareLoader(options) {
   return prepareFile('loader', 'local', options.path);
 }
 
-async function writeLoader(loaderPath, progressOptions, message = 'Writing loader...') {
+async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskrom loader...') {
   await ensureDeviceBeforeFlash('loader');
   emit('status', { message });
   await runTool(['db', loaderPath], progressOptions);
@@ -354,7 +354,7 @@ async function runUpdate(options) {
 
     for (const [index, kind] of plan.entries()) {
       const progressOptions = {
-        progressLabel: `${kind === 'loader' ? 'Loader' : 'Image'} ${index + 1}/${plan.length}`,
+        progressLabel: `${kind === 'loader' ? 'Maskrom loader' : 'Image'} ${index + 1}/${plan.length}`,
         progressOffset: (index / plan.length) * 100,
         progressScale: 1 / plan.length
       };
@@ -376,14 +376,14 @@ async function runUpdate(options) {
             throw new Error('The device is still in Maskrom after loading the loader. Re-enter flashing mode and try again.');
           }
 
-          emit('log', { line: 'Device is in Maskrom mode; loading the configured loader before writing the image.' });
+          emit('log', { line: 'Device is in Maskrom mode; loading the configured Maskrom loader before writing the image.' });
           const loader = implicitLoaderOptions(options);
           const loaderPath = await prepareLoader(loader);
           await writeLoader(loaderPath, {
-            progressLabel: 'Loader prerequisite',
+            progressLabel: 'Maskrom loader prerequisite',
             progressOffset: 0,
             progressScale: 0
-          }, 'Loading loader before image...');
+          }, 'Loading Maskrom loader before image...');
           loaderLoadedThisRun = true;
 
           device = await ensureDeviceBeforeFlash('image');
@@ -626,9 +626,9 @@ ipcMain.handle('app:confirmUpdate', async (_event, options) => {
     detail: [
       ...lines,
       '',
-      'The loader is always updated before the image.',
+      'The Maskrom loader is loaded before writing the complete image.',
       `Release API host: ${sources.releaseApiHost || 'not configured'}`,
-      `Loader host: ${sources.loaderHost || 'not configured'}`,
+      `Maskrom loader host: ${sources.loaderHost || 'not configured'}`,
       `Image host: ${sources.imageHost || 'not configured'}`,
       appState.configOverrides.length > 0 ? `Custom config loaded from: ${appState.configOverrides.join(', ')}` : 'Using packaged default configuration.',
       appState.simulation ? 'Simulation mode: no real device will be flashed.' : 'Do not disconnect the device during the operation.'
@@ -744,7 +744,7 @@ function announceConfigSources() {
     emit('log', { line: `Custom config loaded from: ${appState.configOverrides.join(', ')}` });
   }
   emit('log', { line: `Release API host: ${sources.releaseApiHost || 'not configured'}` });
-  emit('log', { line: `Loader host: ${sources.loaderHost || 'not configured'}` });
+  emit('log', { line: `Maskrom loader host: ${sources.loaderHost || 'not configured'}` });
   emit('log', { line: `Image host: ${sources.imageHost || 'not configured'}` });
 }
 

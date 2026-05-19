@@ -250,7 +250,7 @@ function describeUpdatePlan(options) {
   return kinds.map((kind) => {
     const source = normalized[`${kind}Source`] === 'online' ? 'latest online file' : 'local file';
     if (kind === 'loader') {
-      return `1. Update the loader from the ${source}`;
+      return `1. Load the Maskrom loader from the ${source}`;
     }
     return `${kinds.indexOf(kind) + 1}. Write the image from the ${source}`;
   });

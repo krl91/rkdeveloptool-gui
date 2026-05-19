@@ -227,7 +227,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     elements.configBannerText.textContent = [
       `Config: ${state.configInfo.overrides.join(', ')}`,
       `Release API: ${state.configInfo.source.releaseApiHost || 'not configured'}`,
-      `Loader: ${state.configInfo.source.loaderHost || 'not configured'}`,
+      `Maskrom loader: ${state.configInfo.source.loaderHost || 'not configured'}`,
       `Image: ${state.configInfo.source.imageHost || 'not configured'}`
     ].join(' | ');
   }

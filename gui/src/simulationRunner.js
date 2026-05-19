@@ -12,10 +12,10 @@ function createSimulationRunner({ emit, delay = sleep }) {
     }
 
     if (command === 'db') {
-      emit('log', { line: 'Simulation: writing loader.' });
+      emit('log', { line: 'Simulation: loading Maskrom loader.' });
       await delay(250);
-      emit('log', { line: 'Simulation: loader OK.' });
-      return { stdout: 'Simulation loader OK.\n', stderr: '' };
+      emit('log', { line: 'Simulation: Maskrom loader OK.' });
+      return { stdout: 'Simulation Maskrom loader OK.\n', stderr: '' };
     }
 
     if (command === 'wl') {

@@ -45,7 +45,8 @@ the same tests and prints the coverage report.
 The tests use Node's built-in test runner. Unit tests focus on the
 deterministic business logic: configuration merging, `rkdeveloptool ld`
 parsing, binary discovery, command prefixing, GitHub asset/SHA256 resolution,
-local SHA256 calculation, and the mandatory loader-before-image update order.
+local SHA256 calculation, and the mandatory Maskrom-loader-before-image update
+order.
 Integration tests use `tests/fixtures/mock-rkdeveloptool.js` to validate the
 GUI process runner against a controlled `rkdeveloptool` replacement without
 touching real USB hardware.
@@ -85,9 +86,9 @@ app reads the release metadata, finds the requested asset, and verifies the
 download with the SHA256 digest published by GitHub. If the digest is not
 available, it searches a checksum asset or the release body.
 
-`loader.choices` defines the online loader dropdown shown in the GUI. The
-default choices are Radxa RK356x SPL loaders for `rkdeveloptool db`; OpenIPC
-`u-boot.bin` files are not valid `db` loaders.
+`loader.choices` defines the online Maskrom loader dropdown shown in the GUI.
+The default choices are Radxa RK356x SPL loaders for `rkdeveloptool db`;
+OpenIPC `u-boot.bin` files are not valid `db` loaders.
 
 The online guide opened from the GUI is configurable through
 `documentationUrl`. Network timeouts are configurable through
@@ -102,8 +103,8 @@ downloads use `autoUpdate.downloadTimeoutMs`, and installer execution uses
 `autoUpdate.installTimeoutMs`.
 
 When a custom configuration file is loaded, the renderer shows a persistent
-warning banner. The confirmation dialog also lists the release, loader, and
-image source hosts before the update starts.
+warning banner. The confirmation dialog also lists the release, Maskrom loader,
+and image source hosts before the update starts.
 
 ## Packaging
 

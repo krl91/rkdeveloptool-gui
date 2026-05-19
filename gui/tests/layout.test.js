@@ -31,7 +31,7 @@ test('mobile action row stacks controls and keeps buttons accessible', () => {
 test('quick online update button is visually marked as a warning', () => {
   assert.match(html, /id="quickUpdateButton"\s+class="warning"/);
   assert.match(css, /\.warning\s*\{[\s\S]*background:\s*var\(--warning\);/);
-  assert.match(html, /Updates the loader first, then the image, using the latest online files\./);
+  assert.match(html, /Loads the Maskrom loader, then writes the complete online image\./);
 });
 
 test('loader card exposes preset loader choices plus manual local mode', () => {
@@ -90,8 +90,8 @@ test('main process checks the USB device immediately before each flash command',
 
 test('main process loads a loader prerequisite before image writes from Maskrom', () => {
   assert.match(main, /deviceNeedsLoaderBeforeImage\(device\)/);
-  assert.match(main, /Device is in Maskrom mode; loading the configured loader before writing the image\./);
-  assert.match(main, /await writeLoader\(loaderPath,[\s\S]*'Loading loader before image\.\.\.'\);/);
+  assert.match(main, /Device is in Maskrom mode; loading the configured Maskrom loader before writing the image\./);
+  assert.match(main, /await writeLoader\(loaderPath,[\s\S]*'Loading Maskrom loader before image\.\.\.'\);/);
   assert.match(main, /The device is still in Maskrom after loading the loader/);
 });
 

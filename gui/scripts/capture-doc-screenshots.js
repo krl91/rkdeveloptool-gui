@@ -79,8 +79,8 @@ function appBody(options = {}) {
     <div class="section-header">
       <h2>Update</h2>
       <div class="quick-update">
-        <button id="quickUpdateButton" class="warning" type="button">Latest loader + image</button>
-        <p>Updates the loader first, then the image, using the latest online files.</p>
+        <button id="quickUpdateButton" class="warning" type="button">Flash full image</button>
+        <p>Loads the Maskrom loader, then writes the complete online image.</p>
       </div>
     </div>
 
@@ -88,11 +88,11 @@ function appBody(options = {}) {
       <article class="update-card">
         <label class="check-row">
           <input id="updateLoader" type="checkbox" checked>
-          <span>Loader</span>
+          <span>Maskrom loader</span>
         </label>
-        <div class="segmented" role="group" aria-label="Source loader">
+        <div class="segmented" role="group" aria-label="Source Maskrom loader">
           <label><input type="radio" name="loaderSource" value="online" checked><span>Online</span></label>
-          <label><input type="radio" name="loaderSource" value="local"><span>Local</span></label>
+          <label><input type="radio" name="loaderSource" value="local"><span>Manual</span></label>
         </div>
         <div class="file-row">
           <input id="loaderPath" type="text" readonly placeholder="No local file" disabled>
@@ -266,7 +266,7 @@ function main() {
 
   renderScreenshot(chrome, '03-confirm-update.png', htmlPage(dialogBody(
     'Confirm firmware update',
-    'The updater will write the loader first, then write the image to LBA 0. Online files will be downloaded and verified with SHA256 before flashing.',
+    'The updater will load the Maskrom loader first, then write the complete image to LBA 0. Online files will be downloaded before flashing.',
     'Start update',
     'Cancel',
     true
@@ -280,7 +280,7 @@ function main() {
       'Simulation mode: no real device will be flashed.',
       'SHA256 rk356x_spl_loader_ddr1056_v1.10.111.bin: calculated-at-runtime (no expected checksum configured)',
       '$ SIMULATION rkdeveloptool db rk356x_spl_loader_ddr1056_v1.10.111.bin',
-      'Simulation: loader OK.',
+      'Simulation: Maskrom loader OK.',
       'SHA256 OK runcam_wifilink_sdcard.img: e087dfeee1dc93e749f2e41fe16323366d77c1fe1d96a7c70484d1080866e77e',
       '$ SIMULATION rkdeveloptool wl 0 runcam_wifilink_sdcard.img',
       'Simulation Write LBA from file (25%)',
@@ -299,7 +299,7 @@ function main() {
       'Simulation mode: no real device will be flashed.',
       'SHA256 rk356x_spl_loader_ddr1056_v1.10.111.bin: calculated-at-runtime (no expected checksum configured)',
       '$ SIMULATION rkdeveloptool db rk356x_spl_loader_ddr1056_v1.10.111.bin',
-      'Simulation: loader OK.',
+      'Simulation: Maskrom loader OK.',
       'SHA256 OK runcam_wifilink_sdcard.img: e087dfeee1dc93e749f2e41fe16323366d77c1fe1d96a7c70484d1080866e77e',
       '$ SIMULATION rkdeveloptool wl 0 runcam_wifilink_sdcard.img',
       'Simulation Write LBA from file (100%)',

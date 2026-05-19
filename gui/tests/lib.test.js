@@ -340,7 +340,7 @@ test('describeUpdatePlan explains exactly what will happen before flashing', () 
     loaderSource: 'online',
     imageSource: 'local'
   }), [
-    '1. Update the loader from the latest online file',
+    '1. Load the Maskrom loader from the latest online file',
     '2. Write the image from the local file'
   ]);
 });

@@ -34,9 +34,10 @@ Electron, or a separate `rkdeveloptool` binary to use the packaged app.
 
 ## What The GUI Does
 
-RK Firmware Updater detects one Rockusb device, lets the user choose a loader
-and/or image, verifies online downloads with SHA256, writes the loader before
-the image, shows progress, and offers to reboot the device at the end.
+RK Firmware Updater detects one Rockusb device, lets the user choose a Radxa
+Maskrom loader and a complete OpenIPC image, verifies online image downloads
+with SHA256, loads the Maskrom loader before writing the image, shows progress,
+and offers to reboot the device at the end.
 
 If no device is connected, the application can start a simulation mode so users
 can explore the workflow safely.
@@ -288,11 +289,11 @@ directory, in the Electron user data directory, or by setting:
 
 	RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 
-The firmware release page URL, GitHub API URL, loader URL, loader choices,
-image URL, asset names, image LBA, online user guide URL, application
+The firmware release page URL, GitHub API URL, Maskrom loader URL, Maskrom
+loader choices, image URL, asset names, image LBA, online user guide URL, application
 self-update settings, and network timeouts are configurable. Online GitHub
 release assets and application update downloads are verified with SHA256 before
-use. Direct loader URLs without a published expected checksum are downloaded
+use. Direct Maskrom loader URLs without a published expected checksum are downloaded
 with their calculated SHA256 logged for traceability.
 
 Default network timeout values are intentionally large:
