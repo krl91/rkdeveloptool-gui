@@ -55,7 +55,8 @@ test('renderer document declares a restrictive content security policy', () => {
 });
 
 test('no-device screen shows the RunCam flash-button image and simulation action', () => {
-  assert.match(noDeviceHtml, /runcam-wifilink-rx-flash-button\.(svg|png)/);
+  assert.match(noDeviceHtml, /runcam-wifilink-rx-flash-button\.png/);
+  assert.doesNotMatch(noDeviceHtml, /runcam-wifilink-rx-flash-button\.svg/);
   assert.match(noDeviceHtml, /No Rockusb device was detected/);
   assert.match(noDeviceHtml, /USB-C data cable/);
   assert.match(noDeviceHtml, /reset\/flash button/);
