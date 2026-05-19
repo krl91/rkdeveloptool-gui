@@ -46,7 +46,9 @@ The tests use Node's built-in test runner. Unit tests focus on the
 deterministic business logic: configuration merging, `rkdeveloptool ld`
 parsing, binary discovery, command prefixing, GitHub asset/SHA256 resolution,
 local SHA256 calculation, and the mandatory Maskrom-loader-before-image update
-order.
+order. They also cover the mandatory delay between consecutive `rkdeveloptool`
+commands and the renderer behavior that keeps selected local/online sources
+when **Flash full image** is used.
 Integration tests use `tests/fixtures/mock-rkdeveloptool.js` to validate the
 GUI process runner against a controlled `rkdeveloptool` replacement without
 touching real USB hardware.
@@ -58,8 +60,13 @@ touching real USB hardware.
 - `src/preload.js`: narrow IPC bridge exposed to the renderer.
 - `src/renderer.js`: DOM event handling and UI state updates.
 - `src/lib.js`: deterministic helper functions covered by unit tests.
+- `src/devicePresence.js`: USB device detection and no-device retry/simulation flow.
+- `src/commandDelay.js`: serialized delay between consecutive `rkdeveloptool`
+  commands.
 - `src/toolRunner.js`: real `rkdeveloptool` process runner.
 - `src/simulationRunner.js`: no-hardware simulation runner.
+- `src/updateManager.js`: application self-update checks, download, rollback,
+  and installer launch.
 - `src/windowFactory.js`: BrowserWindow construction and security options.
 - `tests/`: unit and integration tests.
 
@@ -278,8 +285,10 @@ node --version
 npm --version
 ```
 
-The firmware assets are not embedded. The app downloads them on demand from the
-configured release URLs and verifies SHA256 before flashing.
+The firmware assets are not embedded. The app downloads online assets on demand
+from the configured release URLs and verifies SHA256 when an expected checksum
+is available. Local image files selected by the user are kept local and are not
+silently replaced by the configured online image.
 
 USB permissions and drivers are still OS-specific. Linux users should install
 udev rules or run with suitable privileges. On Windows, try the updater first;

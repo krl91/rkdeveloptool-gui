@@ -89,7 +89,7 @@ The GUI package embeds the matching `rkdeveloptool` binary from the repository
 root. Build release packages on the target operating system:
 
 - macOS: DMG
-- Linux: AppImage
+- Linux: AppImage, Debian package, and RPM where supported
 - Windows: NSIS installer
 
 ## macOS Signing And Notarization
@@ -115,7 +115,7 @@ builds `rkdeveloptool`, runs `npm run dist:mac`, uploads the signed/notarized
 DMG as a workflow artifact, and attaches the DMG to the matching GitHub release.
 When the secrets are absent, the same command produces an ad hoc signed DMG and
 still uploads it. For manual runs, set the `tag_name` input to the release tag
-to update, for example `v0.1.0`.
+to update, for example `v0.1.3`.
 
 The Electron macOS build uses hardened runtime and the entitlements in
 `gui/build/entitlements.mac.plist` and
@@ -138,7 +138,7 @@ npm run dist:win
 
 The resulting NSIS installer and blockmap are uploaded as workflow artifacts and
 attached to the matching GitHub release. For manual runs, set the `tag_name`
-input to the release tag to update, for example `v0.1.2`.
+input to the release tag to update, for example `v0.1.3`.
 
 ## Linux Release Workflow
 
@@ -163,4 +163,4 @@ npm run dist:linux:arm64  # AppImage, deb
 
 The resulting AppImage, Debian, RPM, and optional blockmap files are uploaded as
 workflow artifacts and attached to the matching GitHub release. For manual runs,
-set the `tag_name` input to the release tag to update, for example `v0.1.2`.
+set the `tag_name` input to the release tag to update, for example `v0.1.3`.

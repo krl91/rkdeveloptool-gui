@@ -141,7 +141,7 @@ instead of downloading the configured GitHub image.
 
 This button is highlighted because it performs the full update sequence:
 
-1. prepare the selected Radxa Maskrom loader, online or manual
+1. prepare the selected Maskrom loader, online or manual
 2. load the Maskrom loader with `rkdeveloptool db`
 3. prepare the selected complete image, online or local
 4. verify SHA256 when an expected online checksum is available, or log the local file SHA256
