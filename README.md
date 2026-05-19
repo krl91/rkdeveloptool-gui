@@ -219,8 +219,10 @@ Useful GUI make targets:
 		GUI rkdeveloptool binaries. It keeps gui/node_modules/ intact.
 
 GitHub Actions runs make gui-test on pull requests. A separate macOS release
-workflow can build a signed and notarized DMG when the required Apple signing
-secrets are configured.
+workflow builds a DMG on tag pushes. When Apple signing secrets are configured,
+the DMG is signed and notarized. Without those secrets, the workflow still
+builds an ad hoc signed DMG, but macOS may show a security warning on first
+launch.
 
 The automatic test procedure is documented in the next section.
 
