@@ -670,6 +670,40 @@ ipcMain.handle('app:confirmReboot', async () => {
   return result.response === 0;
 });
 
+ipcMain.handle('app:showRebootSuccess', async () => {
+  await dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    buttons: ['OK'],
+    title: 'Device reboot command sent',
+    message: 'You can disconnect the USB-C cable after the device has rebooted correctly.',
+    detail: appState.simulation
+      ? 'Simulation mode: no real device was rebooted.'
+      : 'Wait until the receiver has restarted normally before unplugging USB-C.'
+  });
+  return { ok: true };
+});
+
+ipcMain.handle('app:confirmRebootFailure', async (_event, message) => {
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'error',
+    buttons: ['Try reboot again', 'Do not reboot now', 'Force close app'],
+    defaultId: 0,
+    cancelId: 1,
+    title: 'Device reboot failed',
+    message: 'The reboot command did not complete successfully.',
+    detail: [
+      String(message || 'Unknown reboot error.'),
+      '',
+      'Recommended: keep the device connected and try reboot again.',
+      'Force close is discouraged because the device state may be unclear.'
+    ].join('\n')
+  });
+
+  if (result.response === 0) return 'retry';
+  if (result.response === 2) return 'force-close';
+  return 'keep-open';
+});
+
 ipcMain.handle('app:reboot', async () => {
   if (appState.busy) {
     throw new Error('Cannot reboot while an update is running.');
@@ -684,6 +718,11 @@ ipcMain.handle('app:reboot', async () => {
     appState.busy = false;
     emit('busy', { value: false });
   }
+});
+
+ipcMain.handle('app:forceClose', () => {
+  app.quit();
+  return { ok: true };
 });
 
 async function detectDeviceWithNoDeviceWorkflow() {

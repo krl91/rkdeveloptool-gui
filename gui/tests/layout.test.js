@@ -118,6 +118,26 @@ test('renderer protects reboot against duplicate clicks', () => {
   assert.match(renderer, /let rebootInFlight = false;/);
   assert.match(renderer, /if \(rebootInFlight\) return;/);
   assert.match(renderer, /function updateRebootButton\(\)/);
+  assert.match(renderer, /async function performReboot\(\{ confirmFirst = false \} = \{\}\)/);
+  assert.match(renderer, /await window\.rkGui\.showRebootSuccess\(\)/);
+  assert.match(renderer, /const choice = await window\.rkGui\.confirmRebootFailure\(error\.message\)/);
+  assert.match(renderer, /if \(choice === 'retry'\)[\s\S]*continue;/);
+  assert.match(renderer, /if \(choice === 'force-close'\)[\s\S]*await window\.rkGui\.forceClose\(\);/);
+  assert.match(renderer, /elements\.rebootButton\.addEventListener\('click', \(\) => performReboot\(\)\);/);
+  assert.match(renderer, /await performReboot\(\{ confirmFirst: true \}\);/);
+});
+
+test('main process explains reboot success and failed reboot choices', () => {
+  assert.match(main, /ipcMain\.handle\('app:showRebootSuccess'/);
+  assert.match(main, /You can disconnect the USB-C cable after the device has rebooted correctly\./);
+  assert.match(main, /Wait until the receiver has restarted normally before unplugging USB-C\./);
+  assert.match(main, /ipcMain\.handle\('app:confirmRebootFailure'/);
+  assert.match(main, /buttons:\s*\['Try reboot again', 'Do not reboot now', 'Force close app'\]/);
+  assert.match(main, /Force close is discouraged because the device state may be unclear\./);
+  assert.match(main, /if \(result\.response === 0\) return 'retry';/);
+  assert.match(main, /if \(result\.response === 2\) return 'force-close';/);
+  assert.match(main, /return 'keep-open';/);
+  assert.match(main, /ipcMain\.handle\('app:forceClose'/);
 });
 
 test('renderer falls back safely when no radio input is selected', () => {

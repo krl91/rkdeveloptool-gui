@@ -110,25 +110,44 @@ async function runUpdate(options) {
     setStatus('Done', 'ok');
     rebootAvailable = true;
     updateRebootButton();
-    await proposeReboot();
+    await performReboot({ confirmFirst: true });
   } catch (error) {
     setStatus('Error', 'error');
     appendLog(error.message);
   }
 }
 
-async function proposeReboot() {
+async function performReboot({ confirmFirst = false } = {}) {
   if (rebootInFlight) return;
   rebootInFlight = true;
   updateRebootButton();
   try {
-    const confirmed = await window.rkGui.confirmReboot();
-    if (!confirmed) return;
-    setStatus('Rebooting...');
-    await window.rkGui.reboot();
-  } catch (error) {
-    setStatus('Error', 'error');
-    appendLog(error.message);
+    if (confirmFirst) {
+      const confirmed = await window.rkGui.confirmReboot();
+      if (!confirmed) return;
+    }
+
+    while (true) {
+      try {
+        setStatus('Rebooting...');
+        await window.rkGui.reboot();
+        rebootAvailable = false;
+        setStatus('Rebooted', 'ok');
+        await window.rkGui.showRebootSuccess();
+        return;
+      } catch (error) {
+        setStatus('Error', 'error');
+        appendLog(error.message);
+        const choice = await window.rkGui.confirmRebootFailure(error.message);
+        if (choice === 'retry') {
+          continue;
+        }
+        if (choice === 'force-close') {
+          await window.rkGui.forceClose();
+        }
+        return;
+      }
+    }
   } finally {
     rebootInFlight = false;
     updateRebootButton();
@@ -177,21 +196,7 @@ elements.quickUpdateButton.addEventListener('click', () => {
   runUpdate(collectOptions());
 });
 
-elements.rebootButton.addEventListener('click', async () => {
-  if (rebootInFlight) return;
-  rebootInFlight = true;
-  updateRebootButton();
-  setStatus('Rebooting...');
-  try {
-    await window.rkGui.reboot();
-  } catch (error) {
-    setStatus('Error', 'error');
-    appendLog(error.message);
-  } finally {
-    rebootInFlight = false;
-    updateRebootButton();
-  }
-});
+elements.rebootButton.addEventListener('click', () => performReboot());
 
 elements.documentationButton.addEventListener('click', async () => {
   try {
