@@ -5,7 +5,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const { isNoDeviceOutput, parseDevices, plannedUpdateKinds, simulatedDevice } = require('../src/lib');
-const { createToolRunner, mappedProgressValue } = require('../src/toolRunner');
+const { createToolRunner, explainRkdeveloptoolFailure, mappedProgressValue } = require('../src/toolRunner');
 
 function tempDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'rk-gui-int-'));
@@ -110,6 +110,21 @@ test('integration runner surfaces rkdeveloptool failures with command output', a
   const mock = createMockRunner('fail');
   await assert.rejects(() => mock.run(['db', '/tmp/loader.bin']), /forced mock failure/);
   assert.deepEqual(mock.calls(), ['db /tmp/loader.bin']);
+});
+
+test('integration runner explains invalid Maskrom loader and image write failures', () => {
+  assert.match(
+    explainRkdeveloptoolFailure(['db', '/tmp/u-boot.bin'], '\u001b[30;41mOpening loader failed, exiting download boot!\u001b[0m'),
+    /Do not use OpenIPC \*_u-boot\.bin files as Maskrom loaders/
+  );
+  assert.match(
+    explainRkdeveloptoolFailure(['db', '/tmp/loader.bin'], 'Downloading bootloader failed!'),
+    /could not be sent to the device/
+  );
+  assert.match(
+    explainRkdeveloptoolFailure(['wl', '0', '/tmp/bad.img'], 'Write LBA failed!'),
+    /complete OpenIPC \*_sdcard\.img file/
+  );
 });
 
 test('integration runner explains missing rkdeveloptool executable', async () => {

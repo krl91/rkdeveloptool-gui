@@ -176,7 +176,8 @@ async function resolveOnlineAsset(kind) {
   const asset = findMatchingAsset(assets, item);
 
   if (!asset) {
-    throw new Error(`Asset not found in release: ${item.assetName}`);
+    const expected = item.assetName || item.url || kind;
+    throw new Error(`Online ${kind} asset was not found in the configured release: ${expected}. Check the configuration or select a local file.`);
   }
 
   const directSha256 = resolveSha256FromRelease(release, asset);
@@ -190,7 +191,7 @@ async function resolveOnlineAsset(kind) {
   const sha256 = directSha256 || resolveSha256FromRelease(release, asset, checksumText);
 
   if (!sha256) {
-    throw new Error(`SHA256 not found for ${asset.name}. Configure a manifest or checksum asset in the release.`);
+    throw new Error(`Expected SHA256 was not found for ${asset.name}. The application will not flash this online ${kind} without a trusted checksum.`);
   }
 
   return {
@@ -275,7 +276,7 @@ async function downloadAndVerify(asset) {
     const actual = hash.digest('hex');
     if (asset.sha256 && actual !== asset.sha256) {
       fs.rmSync(tempDestination, { force: true });
-      throw new Error(`Invalid SHA256 for ${asset.name}: ${actual}`);
+      throw new Error(`Invalid SHA256 for ${asset.name}. The download may be incomplete or corrupted.\nExpected: ${asset.sha256}\nActual: ${actual}`);
     }
     fs.renameSync(tempDestination, destination);
     if (asset.sha256) {

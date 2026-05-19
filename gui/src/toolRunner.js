@@ -8,6 +8,42 @@ function mappedProgressValue(progress, options = {}) {
   return Math.max(0, Math.min(100, Math.round(offset + (progress * scale))));
 }
 
+function stripAnsi(text) {
+  return String(text || '').replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+function explainRkdeveloptoolFailure(args, detail) {
+  const cleanDetail = stripAnsi(detail).trim();
+  const command = args[0];
+
+  if (command === 'db' && /Opening loader failed/i.test(cleanDetail)) {
+    return [
+      'The selected Maskrom loader could not be opened by rkdeveloptool.',
+      'Choose one of the Radxa RK356x SPL loaders from the list, or select a valid Rockchip loader manually.',
+      'Do not use OpenIPC *_u-boot.bin files as Maskrom loaders.',
+      cleanDetail
+    ].join('\n');
+  }
+
+  if (command === 'db' && /Downloading bootloader failed/i.test(cleanDetail)) {
+    return [
+      'The Maskrom loader was accepted but could not be sent to the device.',
+      'Re-enter Maskrom mode, try another Radxa RK356x SPL loader, and avoid USB hubs.',
+      cleanDetail
+    ].join('\n');
+  }
+
+  if (command === 'wl' && /Write LBA failed/i.test(cleanDetail)) {
+    return [
+      'The image could not be written to the device.',
+      'Make sure the Maskrom loader was loaded successfully first, then retry with a complete OpenIPC *_sdcard.img file.',
+      cleanDetail
+    ].join('\n');
+  }
+
+  return cleanDetail;
+}
+
 function createToolRunner({ toolPath, config, searchPaths = [], emit, allowUnsafeCommandPrefix = false }) {
   return function runTool(args, options = {}) {
     return new Promise((resolve, reject) => {
@@ -49,7 +85,8 @@ function createToolRunner({ toolPath, config, searchPaths = [], emit, allowUnsaf
           resolve({ stdout, stderr });
         } else {
           const detail = (stderr || stdout || '').trim();
-          const error = new Error(`rkdeveloptool failed with code ${code}${detail ? `: ${detail}` : ''}`);
+          const explained = explainRkdeveloptoolFailure(args, detail);
+          const error = new Error(`rkdeveloptool failed with code ${code}${explained ? `: ${explained}` : ''}`);
           error.code = code;
           error.stdout = stdout;
           error.stderr = stderr;
@@ -62,5 +99,6 @@ function createToolRunner({ toolPath, config, searchPaths = [], emit, allowUnsaf
 
 module.exports = {
   createToolRunner,
+  explainRkdeveloptoolFailure,
   mappedProgressValue
 };
