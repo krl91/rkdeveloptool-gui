@@ -8,10 +8,9 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const guiRoot = path.resolve(__dirname, '..');
 const outputDir = path.join(repoRoot, 'docs', 'assets', 'screenshots');
 const css = fs.readFileSync(path.join(guiRoot, 'src', 'styles.css'), 'utf8');
-const { noDeviceHelpDetail } = require('../src/lib');
-const flashButtonImageUrl = pathToFileURL(path.join(guiRoot, 'src', 'assets', 'runcam-wifilink-rx-flash-button.png')).href;
 const loaderUrl = 'https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin';
 const imageUrl = 'https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_sdcard.img';
+const noDevicePageUrl = pathToFileURL(path.join(guiRoot, 'src', 'no-device.html')).href;
 
 function commandExists(command) {
   const result = spawnSync(command, ['--version'], { encoding: 'utf8' });
@@ -80,7 +79,7 @@ function appBody(options = {}) {
       <h2>Update</h2>
       <div class="quick-update">
         <button id="quickUpdateButton" class="warning" type="button">Flash full image</button>
-        <p>Loads the Maskrom loader, then writes the complete online image.</p>
+        <p>Loads the Maskrom loader, then writes the selected complete image.</p>
       </div>
     </div>
 
@@ -94,6 +93,10 @@ function appBody(options = {}) {
           <label><input type="radio" name="loaderSource" value="online" checked><span>Online</span></label>
           <label><input type="radio" name="loaderSource" value="local"><span>Manual</span></label>
         </div>
+        <label class="field-label" for="loaderChoice">Maskrom loader type</label>
+        <select id="loaderChoice">
+          <option>Radxa RK356x SPL v1.10.111</option>
+        </select>
         <div class="file-row">
           <input id="loaderPath" type="text" readonly placeholder="No local file" disabled>
           <button id="chooseLoader" class="secondary" type="button" disabled>Choose</button>
@@ -183,56 +186,6 @@ function dialogBody(title, message, primary, secondary, warning = false) {
 </style>`;
 }
 
-function noDeviceDialogBody() {
-  return `
-<section class="dialog no-device-dialog" aria-label="No Rockusb device detected">
-  <img
-    src="${flashButtonImageUrl}"
-    alt="RunCam WiFiLink RX flash button location and flashing-mode instructions"
-  >
-  <h1>No Rockusb device detected</h1>
-  <p>${noDeviceHelpDetail}</p>
-  <div class="actions">
-    <button>Close</button>
-    <button>Try again</button>
-    <button class="primary">Simulate</button>
-  </div>
-</section>
-<style>
-  body {
-    display: grid;
-    place-items: center;
-    background: #eef2f6;
-  }
-  .no-device-dialog {
-    width: min(860px, calc(100vw - 48px));
-    padding: 0;
-    overflow: hidden;
-  }
-  .no-device-dialog img {
-    display: block;
-    width: 100%;
-    height: auto;
-    border-bottom: 1px solid #e4e9f1;
-  }
-  .no-device-dialog h1,
-  .no-device-dialog p,
-  .no-device-dialog .actions {
-    margin-left: 28px;
-    margin-right: 28px;
-  }
-  .no-device-dialog h1 {
-    margin-top: 24px;
-  }
-  .no-device-dialog p {
-    white-space: pre-line;
-  }
-  .no-device-dialog .actions {
-    margin-bottom: 28px;
-  }
-</style>`;
-}
-
 function renderScreenshot(chrome, filename, html, width = 1280, height = 900) {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'rkdeveloptool-docs-'));
   const htmlPath = path.join(tempDir, `${path.basename(filename, '.png')}.html`);
@@ -256,11 +209,29 @@ function renderScreenshot(chrome, filename, html, width = 1280, height = 900) {
   }
 }
 
+function renderUrlScreenshot(chrome, filename, url, width = 1280, height = 900) {
+  const outputPath = path.join(outputDir, filename);
+  const result = spawnSync(chrome, [
+    '--headless=new',
+    '--disable-gpu',
+    '--no-first-run',
+    '--no-default-browser-check',
+    '--hide-scrollbars',
+    `--window-size=${width},${height}`,
+    `--screenshot=${outputPath}`,
+    url
+  ], { encoding: 'utf8' });
+
+  if (result.status !== 0) {
+    throw new Error(`Failed to capture ${filename}:\n${result.stderr || result.stdout}`);
+  }
+}
+
 function main() {
   fs.mkdirSync(outputDir, { recursive: true });
   const chrome = findChrome();
 
-  renderScreenshot(chrome, '01-no-device-simulation-choice.png', htmlPage(noDeviceDialogBody()), 1040, 820);
+  renderUrlScreenshot(chrome, '01-no-device-simulation-choice.png', noDevicePageUrl, 1040, 820);
 
   renderScreenshot(chrome, '02-main-window.png', htmlPage(appBody()), 1280, 900);
 
