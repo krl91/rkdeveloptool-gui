@@ -255,8 +255,14 @@ test('renderer waits for final completed UI before proposing reboot', () => {
   );
 
   assert.match(renderer, /function waitForUiPaint\(\)/);
-  assert.match(renderer, /await window\.rkGui\.startUpdate\(options\);[\s\S]*setProgress\('Done', 100\);[\s\S]*setStatus\('Done', 'ok'\);[\s\S]*rebootAvailable = true;[\s\S]*await waitForUiPaint\(\);[\s\S]*await performReboot\(\{ confirmFirst: true \}\);/);
-  assert.match(doneHandler, /setProgress\('Done', 100\);/);
+  assert.match(renderer, /let firmwareUpdateActive = false;/);
+  assert.match(renderer, /let firmwareUpdateFinished = false;/);
+  assert.match(renderer, /let firmwareProgressFloor = 0;/);
+  assert.match(renderer, /if \(firmwareUpdateFinished && normalized < 100\) return;/);
+  assert.match(renderer, /if \(firmwareUpdateActive && normalized < firmwareProgressFloor\)/);
+  assert.match(renderer, /function finishFirmwareProgress\(\)[\s\S]*firmwareUpdateFinished = true;[\s\S]*firmwareProgressFloor = 100;[\s\S]*setProgress\('Done', 100\);/);
+  assert.match(renderer, /await window\.rkGui\.startUpdate\(options\);[\s\S]*finishFirmwareProgress\(\);[\s\S]*setStatus\('Done', 'ok'\);[\s\S]*rebootAvailable = true;[\s\S]*await waitForUiPaint\(\);[\s\S]*await performReboot\(\{ confirmFirst: true \}\);/);
+  assert.match(doneHandler, /finishFirmwareProgress\(\);/);
   assert.doesNotMatch(doneHandler, /rebootAvailable = true;/);
 });
 

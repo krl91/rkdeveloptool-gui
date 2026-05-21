@@ -38,6 +38,9 @@ let busy = false;
 let flashBusy = false;
 let rebootAvailable = false;
 let rebootInFlight = false;
+let firmwareUpdateActive = false;
+let firmwareUpdateFinished = false;
+let firmwareProgressFloor = 0;
 let currentPublicConfig = null;
 
 function updateDeviceLine(device) {
@@ -144,11 +147,39 @@ function setStatus(message, mode = '') {
   elements.statusText.className = `status-pill ${mode}`.trim();
 }
 
-function setProgress(label, value) {
-  const normalized = Math.max(0, Math.min(100, Number(value) || 0));
+function setProgress(label, value, options = {}) {
+  let normalized = Math.max(0, Math.min(100, Number(value) || 0));
+  if (!options.allowRegression) {
+    if (firmwareUpdateFinished && normalized < 100) return;
+    if (firmwareUpdateActive && normalized < firmwareProgressFloor) {
+      normalized = firmwareProgressFloor;
+    }
+  }
+  if (firmwareUpdateActive || firmwareUpdateFinished) {
+    firmwareProgressFloor = Math.max(firmwareProgressFloor, normalized);
+  }
   elements.progressLabel.textContent = label;
   elements.progressValue.textContent = `${normalized}%`;
   elements.progressBar.value = normalized;
+}
+
+function startFirmwareProgress() {
+  firmwareUpdateActive = true;
+  firmwareUpdateFinished = false;
+  firmwareProgressFloor = 0;
+  setProgress('Preparing', 0, { allowRegression: true });
+}
+
+function finishFirmwareProgress() {
+  firmwareUpdateActive = false;
+  firmwareUpdateFinished = true;
+  firmwareProgressFloor = 100;
+  setProgress('Done', 100);
+}
+
+function failFirmwareProgress() {
+  firmwareUpdateActive = false;
+  firmwareUpdateFinished = false;
 }
 
 function cleanErrorMessage(error) {
@@ -195,16 +226,17 @@ async function runUpdate(options) {
   }
 
   setStatus('Updating...');
-  setProgress('Preparing', 0);
+  startFirmwareProgress();
   try {
     await window.rkGui.startUpdate(options);
-    setProgress('Done', 100);
+    finishFirmwareProgress();
     setStatus('Done', 'ok');
     rebootAvailable = true;
     updateRebootButton();
     await waitForUiPaint();
     await performReboot({ confirmFirst: true });
   } catch (error) {
+    failFirmwareProgress();
     setStatus('Error', 'error');
     setProgress('Failed', elements.progressBar.value);
     appendLog(cleanErrorMessage(error));
@@ -264,7 +296,7 @@ window.rkGui.onEvent((event) => {
   if (event.type === 'done') {
     appendLog(event.message);
     setStatus('Done', 'ok');
-    setProgress('Done', 100);
+    finishFirmwareProgress();
   }
 });
 
