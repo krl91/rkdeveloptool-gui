@@ -316,16 +316,40 @@ test('connect device button runs ld and controls flash actions', () => {
     renderer.indexOf('function setBusy')
   );
 
-  assert.match(preload, /detectDevice: \(\) => ipcRenderer\.invoke\('app:detectDevice'\)/);
-  assert.match(main, /async function detectAndSetSingleDevice\(\)[\s\S]*const devices = await detectSingleDevice\(\);/);
-  assert.match(detectHandler, /detectAndSetSingleDevice\(\)/);
+  assert.match(preload, /detectDevice: \(options\) => ipcRenderer\.invoke\('app:detectDevice', options\)/);
+  assert.match(main, /async function detectAndSetSingleDevice\(options = \{\}\)[\s\S]*const devices = await detectSingleDevice\(\);/);
+  assert.match(detectHandler, /detectAndSetSingleDevice\(options \|\| \{\}\)/);
   assert.match(updateFlashButtonsBlock, /elements\.startButton\.disabled = busy \|\| !deviceConnected;/);
   assert.match(updateFlashButtonsBlock, /elements\.quickUpdateButton\.disabled = busy \|\| !deviceConnected;/);
   assert.match(updateFlashButtonsBlock, /elements\.connectDeviceButton\.disabled = busy;/);
-  assert.match(refreshBlock, /const result = await window\.rkGui\.detectDevice\(\);/);
+  assert.match(refreshBlock, /const result = await window\.rkGui\.detectDevice\(\{ reconnectSimulation: !afterReboot \}\);/);
   assert.match(refreshBlock, /if \(result\.found\)[\s\S]*deviceConnected = true;[\s\S]*updateFlashActionButtons\(\);/);
   assert.match(refreshBlock, /deviceConnected = false;[\s\S]*No Rockusb device detected after reboot[\s\S]*updateFlashActionButtons\(\);/);
   assert.match(renderer, /elements\.connectDeviceButton\.addEventListener\('click', \(\) => refreshDeviceConnection\(\)\);/);
+});
+
+test('simulation mode disconnects after reboot and reconnects from Connect device', () => {
+  const detectBlock = main.slice(
+    main.indexOf('async function detectAndSetSingleDevice'),
+    main.indexOf('async function ensureDeviceBeforeFlash')
+  );
+  const rebootHandler = main.slice(
+    main.indexOf("ipcMain.handle('app:reboot'"),
+    main.indexOf("ipcMain.handle('app:forceClose'")
+  );
+  const refreshBlock = renderer.slice(
+    renderer.indexOf('async function refreshDeviceConnection'),
+    renderer.indexOf("window.rkGui.onEvent")
+  );
+
+  assert.match(main, /simulationDisconnected:\s*false/);
+  assert.match(main, /function setActiveDevice\(device, simulation\)[\s\S]*appState\.simulationDisconnected = false;/);
+  assert.match(rebootHandler, /if \(appState\.simulation\) \{[\s\S]*appState\.simulationDisconnected = true;[\s\S]*appState\.device = null;[\s\S]*\}/);
+  assert.match(detectBlock, /if \(appState\.simulation && appState\.simulationDisconnected\)/);
+  assert.match(detectBlock, /if \(options\.reconnectSimulation\)[\s\S]*setActiveDevice\(device, true\);[\s\S]*Simulation: device reconnected\./);
+  assert.match(detectBlock, /appState\.device = null;[\s\S]*emit\('device-missing', \{\}\);[\s\S]*return \{ found: false, simulation: true \};/);
+  assert.match(refreshBlock, /detectDevice\(\{ reconnectSimulation: !afterReboot \}\)/);
+  assert.match(renderer, /await refreshDeviceConnection\(\{ afterReboot: true \}\);/);
 });
 
 test('renderer protects reboot against duplicate clicks', () => {

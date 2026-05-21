@@ -327,7 +327,7 @@ async function performReboot({ confirmFirst = false } = {}) {
 async function refreshDeviceConnection({ afterReboot = false } = {}) {
   try {
     setStatus('Checking device...');
-    const result = await window.rkGui.detectDevice();
+    const result = await window.rkGui.detectDevice({ reconnectSimulation: !afterReboot });
     if (result.found) {
       deviceConnected = true;
       updateDeviceLine(result.device);

@@ -53,6 +53,7 @@ let appState = {
   rkdeveloptoolPath: null,
   rkdeveloptoolSearchPaths: [],
   simulation: false,
+  simulationDisconnected: false,
   busy: false,
   downloadBusy: false,
   flashBusy: false,
@@ -222,10 +223,23 @@ async function detectSingleDevice() {
 function setActiveDevice(device, simulation) {
   appState.device = device;
   appState.simulation = simulation;
+  appState.simulationDisconnected = false;
   emit('device', { device, simulation });
 }
 
-async function detectAndSetSingleDevice() {
+async function detectAndSetSingleDevice(options = {}) {
+  if (appState.simulation && appState.simulationDisconnected) {
+    if (options.reconnectSimulation) {
+      const device = simulatedDevice();
+      setActiveDevice(device, true);
+      emit('log', { line: 'Simulation: device reconnected.' });
+      return { found: true, device, simulation: true };
+    }
+    appState.device = null;
+    emit('device-missing', {});
+    return { found: false, simulation: true };
+  }
+
   const devices = await detectSingleDevice();
   if (devices.length === 1) {
     setActiveDevice(devices[0], appState.simulation);
@@ -236,6 +250,7 @@ async function detectAndSetSingleDevice() {
   }
   appState.device = null;
   appState.simulation = false;
+  appState.simulationDisconnected = false;
   emit('device-missing', {});
   return { found: false };
 }
@@ -817,7 +832,7 @@ ipcMain.handle('app:getInitialState', () => ({
 
 ipcMain.handle('app:getOperationState', () => operationStatePayload());
 
-ipcMain.handle('app:detectDevice', () => detectAndSetSingleDevice());
+ipcMain.handle('app:detectDevice', (_event, options) => detectAndSetSingleDevice(options || {}));
 
 ipcMain.handle('app:getConfigJson', () => formatConfigJson(appState.config));
 
@@ -1017,6 +1032,10 @@ ipcMain.handle('app:reboot', async () => {
   setOperationFlag('rebooting', true);
   try {
     await runTool(['rd']);
+    if (appState.simulation) {
+      appState.simulationDisconnected = true;
+      appState.device = null;
+    }
     emit('log', { line: 'Reboot command sent.' });
     return { ok: true };
   } finally {
