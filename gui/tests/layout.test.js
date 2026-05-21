@@ -220,6 +220,38 @@ test('renderer proposes reboot only after progress is complete and operations ar
   assert.match(renderer, /const rebootReady = await waitForRebootProposalReady\(\);[\s\S]*await waitForUiPaint\(\);[\s\S]*await performReboot\(\{ confirmFirst: true \}\);/);
 });
 
+test('main process tracks each busy flag around its operation', () => {
+  const runToolBlock = main.slice(
+    main.indexOf('async function runTool'),
+    main.indexOf('function timeoutSignal')
+  );
+  const downloadBlock = main.slice(
+    main.indexOf('async function downloadAndVerify'),
+    main.indexOf('function explainDownloadFailure')
+  );
+  const writeLoaderBlock = main.slice(
+    main.indexOf('async function writeLoader'),
+    main.indexOf('function logMaskromAfterSuccessfulLoader')
+  );
+  const runUpdateBlock = main.slice(
+    main.indexOf('async function runUpdate'),
+    main.indexOf('function appUpdateConfig')
+  );
+  const rebootHandler = main.slice(
+    main.indexOf("ipcMain.handle('app:reboot'"),
+    main.indexOf("ipcMain.handle('app:forceClose'")
+  );
+
+  assert.match(main, /function operationStatePayload\(\)[\s\S]*busy: appState\.busy[\s\S]*downloadBusy: appState\.downloadBusy[\s\S]*flashBusy: appState\.flashBusy[\s\S]*toolBusy: appState\.toolBusy[\s\S]*rebooting: appState\.rebooting/);
+  assert.match(main, /function setOperationFlag\(flag, value\)[\s\S]*appState\[flag\] = value;[\s\S]*emitOperationState\(\);/);
+  assert.match(runToolBlock, /setOperationFlag\('toolBusy', true\);[\s\S]*finally \{[\s\S]*setOperationFlag\('toolBusy', false\);/);
+  assert.match(downloadBlock, /setOperationFlag\('downloadBusy', true\);[\s\S]*finally \{[\s\S]*setOperationFlag\('downloadBusy', false\);/);
+  assert.match(writeLoaderBlock, /setOperationFlag\('flashBusy', true\);[\s\S]*finally \{[\s\S]*setOperationFlag\('flashBusy', false\);/);
+  assert.match(runUpdateBlock, /setOperationFlag\('busy', true\);[\s\S]*finally \{[\s\S]*setOperationFlag\('busy', false\);/);
+  assert.match(runUpdateBlock, /emit\('status', \{ message: 'Writing image\.\.\.' \}\);[\s\S]*setOperationFlag\('flashBusy', true\);[\s\S]*finally \{[\s\S]*setOperationFlag\('flashBusy', false\);/);
+  assert.match(rebootHandler, /setOperationFlag\('rebooting', true\);[\s\S]*await runTool\(\['rd'\]\);[\s\S]*finally \{[\s\S]*setOperationFlag\('rebooting', false\);/);
+});
+
 test('main process loads a loader prerequisite before image writes from Maskrom', () => {
   assert.match(main, /deviceNeedsLoaderBeforeImage\(device\)/);
   assert.match(main, /Device is in Maskrom mode; loading the configured Maskrom loader before writing the image\./);
