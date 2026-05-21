@@ -7,6 +7,7 @@ const css = fs.readFileSync(path.join(__dirname, '..', 'src', 'styles.css'), 'ut
 const html = fs.readFileSync(path.join(__dirname, '..', 'src', 'index.html'), 'utf8');
 const noDeviceHtml = fs.readFileSync(path.join(__dirname, '..', 'src', 'no-device.html'), 'utf8');
 const main = fs.readFileSync(path.join(__dirname, '..', 'src', 'main.js'), 'utf8');
+const preload = fs.readFileSync(path.join(__dirname, '..', 'src', 'preload.js'), 'utf8');
 const renderer = fs.readFileSync(path.join(__dirname, '..', 'src', 'renderer.js'), 'utf8');
 
 test('layout allows the window to scroll when content is taller than the viewport', () => {
@@ -52,6 +53,76 @@ test('renderer document declares a restrictive content security policy', () => {
   assert.match(html, /http-equiv="Content-Security-Policy"/);
   assert.match(html, /default-src 'self'/);
   assert.match(html, /object-src 'none'/);
+});
+
+test('main window exposes left navigation tabs for flash and parameters views', () => {
+  assert.match(html, /<nav class="sidebar" aria-label="Main navigation">/);
+  assert.match(html, /id="flashTab"[\s\S]*data-view="flash"[\s\S]*>Flash<\/button>/);
+  assert.match(html, /id="parametersTab"[\s\S]*data-view="parameters"[\s\S]*>Parameters<\/button>/);
+  assert.match(html, /id="flashView"[\s\S]*data-view-panel="flash"/);
+  assert.match(html, /id="parametersView"[\s\S]*data-view-panel="parameters"[\s\S]*hidden/);
+  assert.match(css, /\.app-layout\s*\{[\s\S]*grid-template-columns:\s*164px minmax\(0,\s*1fr\);/);
+  assert.match(css, /\.sidebar\s*\{[\s\S]*position:\s*sticky;/);
+});
+
+test('renderer switches tabs without disrupting the flash view', () => {
+  assert.match(renderer, /function switchView\(viewName\)/);
+  assert.match(renderer, /tab\.classList\.toggle\('active', selected\);/);
+  assert.match(renderer, /tab\.setAttribute\('aria-current', 'page'\);/);
+  assert.match(renderer, /view\.hidden = view\.dataset\.viewPanel !== viewName;/);
+  assert.match(renderer, /elements\.flashTab\.addEventListener\('click', \(\) => switchView\('flash'\)\);/);
+  assert.match(renderer, /elements\.parametersTab\.addEventListener\('click', \(\) => switchView\('parameters'\)\);/);
+});
+
+test('parameters view shows configured source hosts', () => {
+  assert.match(html, /id="parameterReleaseApi"/);
+  assert.match(html, /id="parameterLoaderSource"/);
+  assert.match(html, /id="parameterImageSource"/);
+  assert.match(renderer, /elements\.parameterReleaseApi\.textContent = state\.configInfo\?\.source\?\.releaseApiHost/);
+  assert.match(renderer, /elements\.parameterLoaderSource\.textContent = state\.configInfo\?\.source\?\.loaderHost/);
+  assert.match(renderer, /elements\.parameterImageSource\.textContent = state\.configInfo\?\.source\?\.imageHost/);
+});
+
+test('parameters view exposes JSON import export and apply actions', () => {
+  assert.match(html, /id="configEditor"[\s\S]*aria-label="JSON configuration"/);
+  assert.match(html, /id="loadConfigButton"[\s\S]*Load external file/);
+  assert.match(html, /id="exportConfigButton"[\s\S]*Export file/);
+  assert.match(html, /id="resetConfigButton"[\s\S]*Reset/);
+  assert.match(html, /id="applyConfigButton"[\s\S]*Apply/);
+  assert.match(css, /#configEditor\s*\{[\s\S]*font:\s*12px\/1\.45 ui-monospace/);
+  assert.match(css, /\.danger-secondary\s*\{[\s\S]*color:\s*var\(--danger\);/);
+  assert.match(preload, /getConfigJson: \(\) => ipcRenderer\.invoke\('app:getConfigJson'\)/);
+  assert.match(preload, /loadExternalConfigFile: \(\) => ipcRenderer\.invoke\('app:loadExternalConfigFile'\)/);
+  assert.match(preload, /exportConfigFile: \(jsonText\) => ipcRenderer\.invoke\('app:exportConfigFile', jsonText\)/);
+  assert.match(preload, /applyConfig: \(jsonText\) => ipcRenderer\.invoke\('app:applyConfig', jsonText\)/);
+  assert.match(preload, /resetConfig: \(\) => ipcRenderer\.invoke\('app:resetConfig'\)/);
+  assert.match(renderer, /elements\.configEditor\.value = await window\.rkGui\.getConfigJson\(\);/);
+  assert.match(renderer, /window\.rkGui\.loadExternalConfigFile\(\)/);
+  assert.match(renderer, /window\.rkGui\.exportConfigFile\(elements\.configEditor\.value\)/);
+  assert.match(renderer, /window\.rkGui\.applyConfig\(elements\.configEditor\.value\)/);
+  assert.match(renderer, /window\.rkGui\.resetConfig\(\)/);
+});
+
+test('main process validates imports and saves applied or reset JSON as user configuration', () => {
+  assert.match(main, /function parseEditableConfig\(jsonText\)/);
+  assert.match(main, /Invalid JSON configuration/);
+  assert.match(main, /function loadDefaultConfig\(\)/);
+  assert.match(main, /function userConfigPath\(\)[\s\S]*rkdeveloptool-gui\.config\.json/);
+  assert.match(main, /function writeUserConfig\(config\)[\s\S]*fs\.writeFileSync\(tempDestination, formatConfigJson\(config\), 'utf8'\);[\s\S]*fs\.renameSync\(tempDestination, destination\);/);
+  assert.match(main, /ipcMain\.handle\('app:loadExternalConfigFile'/);
+  assert.match(main, /ipcMain\.handle\('app:exportConfigFile'/);
+  assert.match(main, /ipcMain\.handle\('app:applyConfig'/);
+  assert.match(main, /ipcMain\.handle\('app:resetConfig'/);
+  assert.match(main, /Reset all parameters to the default values\?/);
+  assert.match(main, /const config = loadDefaultConfig\(\);/);
+  assert.match(main, /appState\.config = config;/);
+  assert.match(main, /appState\.rkdeveloptoolPath = tool\.path;/);
+});
+
+test('left navigation collapses above the content on mobile', () => {
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.app-layout\s*\{[\s\S]*grid-template-columns:\s*1fr;/);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.sidebar\s*\{[\s\S]*position:\s*static;/);
+  assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*\.sidebar\s*\{[\s\S]*grid-template-columns:\s*auto 1fr 1fr;/);
 });
 
 test('no-device screen shows the RunCam flash-button image and simulation action', () => {

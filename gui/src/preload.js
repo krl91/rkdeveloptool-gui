@@ -11,6 +11,11 @@ contextBridge.exposeInMainWorld('rkGui', {
   reboot: () => ipcRenderer.invoke('app:reboot'),
   forceClose: () => ipcRenderer.invoke('app:forceClose'),
   openDocumentation: () => ipcRenderer.invoke('app:openDocumentation'),
+  getConfigJson: () => ipcRenderer.invoke('app:getConfigJson'),
+  loadExternalConfigFile: () => ipcRenderer.invoke('app:loadExternalConfigFile'),
+  exportConfigFile: (jsonText) => ipcRenderer.invoke('app:exportConfigFile', jsonText),
+  applyConfig: (jsonText) => ipcRenderer.invoke('app:applyConfig', jsonText),
+  resetConfig: () => ipcRenderer.invoke('app:resetConfig'),
   onEvent: (callback) => {
     const listener = (_event, payload) => callback(payload);
     ipcRenderer.on('app:event', listener);

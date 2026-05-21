@@ -28,6 +28,58 @@ body {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.app-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 164px minmax(0, 1fr);
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 16px 10px;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  background: #1f2933;
+  color: #ffffff;
+}
+
+.sidebar-title {
+  min-height: 40px;
+  padding: 0 10px 10px;
+  display: flex;
+  align-items: center;
+  color: #dbe4ee;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.nav-tab {
+  width: 100%;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  border-color: transparent;
+  background: transparent;
+  color: #cbd5e1;
+  text-align: left;
+}
+
+.nav-tab:hover {
+  background: #2f3b47;
+  color: #ffffff;
+}
+
+.nav-tab.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
 button,
 input,
 select {
@@ -41,6 +93,16 @@ select {
   display: grid;
   gap: 16px;
   overflow-x: hidden;
+}
+
+.view {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.view[hidden] {
+  display: none;
 }
 
 .topbar {
@@ -275,6 +337,16 @@ button:disabled {
   color: var(--text);
 }
 
+.danger-secondary {
+  background: #ffffff;
+  border-color: #fecdca;
+  color: var(--danger);
+}
+
+.danger-secondary:active {
+  background: #fff1f3;
+}
+
 .progress-block {
   display: grid;
   gap: 6px;
@@ -299,6 +371,68 @@ progress {
   min-height: 300px;
   padding: 18px;
   min-width: 0;
+}
+
+.parameters-panel {
+  padding: 18px;
+}
+
+.parameters-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.parameters-help {
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+#configEditor {
+  width: 100%;
+  min-height: min(420px, 48vh);
+  margin: 0 0 14px;
+  padding: 12px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #101828;
+  color: #e4e7ec;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre;
+  overflow: auto;
+}
+
+.parameters-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.parameter-row {
+  min-width: 0;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.parameter-row span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.parameter-row strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
 }
 
 .status-pill {
@@ -343,6 +477,27 @@ pre {
 }
 
 @media (max-width: 760px) {
+  .app-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    padding: 10px 16px;
+    grid-template-columns: auto 1fr 1fr;
+    align-items: center;
+  }
+
+  .sidebar-title {
+    min-height: 38px;
+    padding: 0 8px 0 0;
+  }
+
+  .nav-tab {
+    justify-content: center;
+  }
+
   .shell {
     padding: 16px;
   }
@@ -363,6 +518,11 @@ pre {
     gap: 8px;
   }
 
+  .parameters-actions {
+    display: grid;
+    gap: 8px;
+  }
+
   .quick-update {
     justify-items: stretch;
   }
@@ -377,6 +537,10 @@ pre {
   }
 
   .action-row {
+    grid-template-columns: 1fr;
+  }
+
+  .parameter-row {
     grid-template-columns: 1fr;
   }
 

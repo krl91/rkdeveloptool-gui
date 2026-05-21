@@ -65,14 +65,71 @@ const rkdeveloptoolCommandSequencer = createCommandSequencer({
 });
 
 function loadConfig() {
-  const defaultConfigPath = path.join(__dirname, '..', 'config', 'default.json');
   const candidates = [
     process.env.RKDEVELOPTOOL_GUI_CONFIG,
     path.join(process.cwd(), 'rkdeveloptool-gui.config.json'),
     path.join(app.getPath('userData'), 'rkdeveloptool-gui.config.json'),
     path.join(process.resourcesPath || '', 'rkdeveloptool-gui.config.json')
   ].filter(Boolean);
-  return loadConfigFilesWithSources(defaultConfigPath, candidates);
+  return loadConfigFilesWithSources(defaultConfigPath(), candidates);
+}
+
+function defaultConfigPath() {
+  return path.join(__dirname, '..', 'config', 'default.json');
+}
+
+function loadDefaultConfig() {
+  return parseEditableConfig(fs.readFileSync(defaultConfigPath(), 'utf8'));
+}
+
+function userConfigPath() {
+  return path.join(app.getPath('userData'), 'rkdeveloptool-gui.config.json');
+}
+
+function parseEditableConfig(jsonText) {
+  let config;
+  try {
+    config = JSON.parse(String(jsonText || ''));
+  } catch (error) {
+    throw new Error(`Invalid JSON configuration: ${error.message}`);
+  }
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error('Invalid JSON configuration: the root value must be an object.');
+  }
+  return config;
+}
+
+function formatConfigJson(config) {
+  return `${JSON.stringify(config, null, 2)}\n`;
+}
+
+function writeUserConfig(config) {
+  const destination = userConfigPath();
+  fs.mkdirSync(path.dirname(destination), { recursive: true });
+  const tempDestination = `${destination}.tmp`;
+  fs.writeFileSync(tempDestination, formatConfigJson(config), 'utf8');
+  fs.renameSync(tempDestination, destination);
+  return destination;
+}
+
+function configStatePayload() {
+  return {
+    config: publicConfig(appState.config),
+    configInfo: {
+      overrides: appState.configOverrides,
+      source: sourceSummary(appState.config)
+    }
+  };
+}
+
+function applyConfigObject(config) {
+  appState.config = config;
+  const configPath = writeUserConfig(config);
+  appState.configOverrides = Array.from(new Set([...appState.configOverrides, configPath]));
+  const tool = findRkdeveloptool(appState.config);
+  appState.rkdeveloptoolPath = tool.path;
+  appState.rkdeveloptoolSearchPaths = tool.searchPaths;
+  return configPath;
 }
 
 function findRkdeveloptool(config) {
@@ -635,14 +692,92 @@ async function showNoDeviceChoice() {
 
 ipcMain.handle('app:getInitialState', () => ({
   device: appState.device,
-  config: publicConfig(appState.config),
-  configInfo: {
-    overrides: appState.configOverrides,
-    source: sourceSummary(appState.config)
-  },
+  ...configStatePayload(),
   platform: os.platform(),
   simulation: appState.simulation
 }));
+
+ipcMain.handle('app:getConfigJson', () => formatConfigJson(appState.config));
+
+ipcMain.handle('app:loadExternalConfigFile', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'JSON configuration', extensions: ['json'] },
+      { name: 'All files', extensions: ['*'] }
+    ]
+  });
+  if (result.canceled || result.filePaths.length === 0) {
+    return { canceled: true };
+  }
+
+  const filePath = result.filePaths[0];
+  const config = parseEditableConfig(fs.readFileSync(filePath, 'utf8'));
+  return {
+    canceled: false,
+    filePath,
+    json: formatConfigJson(config)
+  };
+});
+
+ipcMain.handle('app:exportConfigFile', async (_event, jsonText) => {
+  const config = parseEditableConfig(jsonText);
+  const result = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: 'rkdeveloptool-gui.config.json',
+    filters: [
+      { name: 'JSON configuration', extensions: ['json'] },
+      { name: 'All files', extensions: ['*'] }
+    ]
+  });
+  if (result.canceled || !result.filePath) {
+    return { canceled: true };
+  }
+  fs.writeFileSync(result.filePath, formatConfigJson(config), 'utf8');
+  return { canceled: false, filePath: result.filePath };
+});
+
+ipcMain.handle('app:applyConfig', async (_event, jsonText) => {
+  if (appState.busy) {
+    throw new Error('Cannot apply configuration while another operation is running.');
+  }
+  const config = parseEditableConfig(jsonText);
+  const filePath = applyConfigObject(config);
+  announceConfigSources();
+  return {
+    ok: true,
+    filePath,
+    json: formatConfigJson(appState.config),
+    ...configStatePayload()
+  };
+});
+
+ipcMain.handle('app:resetConfig', async () => {
+  if (appState.busy) {
+    throw new Error('Cannot reset configuration while another operation is running.');
+  }
+  const result = await dialog.showMessageBox(mainWindow, {
+    type: 'warning',
+    buttons: ['Reset to defaults', 'Cancel'],
+    defaultId: 1,
+    cancelId: 1,
+    title: 'Reset parameters',
+    message: 'Reset all parameters to the default values?',
+    detail: 'The current user configuration will be overwritten with the packaged default configuration.'
+  });
+  if (result.response !== 0) {
+    return { canceled: true };
+  }
+
+  const config = loadDefaultConfig();
+  const filePath = applyConfigObject(config);
+  announceConfigSources();
+  return {
+    canceled: false,
+    filePath,
+    json: formatConfigJson(appState.config),
+    ...configStatePayload()
+  };
+});
 
 ipcMain.handle('app:openDocumentation', async () => {
   const url = appState.config?.documentationUrl;

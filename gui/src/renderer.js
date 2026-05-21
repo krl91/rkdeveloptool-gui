@@ -2,6 +2,10 @@ const elements = {
   deviceLine: document.getElementById('deviceLine'),
   documentationButton: document.getElementById('documentationButton'),
   rebootButton: document.getElementById('rebootButton'),
+  flashTab: document.getElementById('flashTab'),
+  parametersTab: document.getElementById('parametersTab'),
+  flashView: document.getElementById('flashView'),
+  parametersView: document.getElementById('parametersView'),
   quickUpdateButton: document.getElementById('quickUpdateButton'),
   updateLoader: document.getElementById('updateLoader'),
   updateImage: document.getElementById('updateImage'),
@@ -17,7 +21,15 @@ const elements = {
   progressValue: document.getElementById('progressValue'),
   progressBar: document.getElementById('progressBar'),
   statusText: document.getElementById('statusText'),
-  log: document.getElementById('log')
+  log: document.getElementById('log'),
+  parameterReleaseApi: document.getElementById('parameterReleaseApi'),
+  parameterLoaderSource: document.getElementById('parameterLoaderSource'),
+  parameterImageSource: document.getElementById('parameterImageSource'),
+  configEditor: document.getElementById('configEditor'),
+  loadConfigButton: document.getElementById('loadConfigButton'),
+  exportConfigButton: document.getElementById('exportConfigButton'),
+  resetConfigButton: document.getElementById('resetConfigButton'),
+  applyConfigButton: document.getElementById('applyConfigButton')
 };
 elements.configBanner = document.getElementById('configBanner');
 elements.configBannerText = document.getElementById('configBannerText');
@@ -26,6 +38,7 @@ let busy = false;
 let flashBusy = false;
 let rebootAvailable = false;
 let rebootInFlight = false;
+let currentPublicConfig = null;
 
 function updateDeviceLine(device) {
   elements.deviceLine.textContent = `Vid=0x${device.vid}, Pid=0x${device.pid}, LocationID=${device.locationId}, ${device.mode}`;
@@ -34,6 +47,26 @@ function updateDeviceLine(device) {
 function selectedRadio(name) {
   const radio = document.querySelector(`input[name="${name}"]:checked`);
   return radio ? radio.value : 'online';
+}
+
+function switchView(viewName) {
+  const tabs = [elements.flashTab, elements.parametersTab];
+  const views = [elements.flashView, elements.parametersView];
+
+  for (const tab of tabs) {
+    const selected = tab.dataset.view === viewName;
+    tab.classList.toggle('active', selected);
+    if (selected) {
+      tab.setAttribute('aria-current', 'page');
+    } else {
+      tab.removeAttribute('aria-current');
+    }
+  }
+
+  for (const view of views) {
+    view.hidden = view.dataset.viewPanel !== viewName;
+    view.classList.toggle('active', !view.hidden);
+  }
 }
 
 function updateRebootButton() {
@@ -62,6 +95,43 @@ function updateSourceControls() {
   elements.loaderPath.disabled = !loaderLocal;
   elements.chooseImage.disabled = busy || !imageLocal;
   elements.imagePath.disabled = !imageLocal;
+}
+
+function renderConfigurationState(state) {
+  currentPublicConfig = state.config;
+  const selectedLoaderChoice = elements.loaderChoice.value;
+  elements.loaderChoice.textContent = '';
+  for (const choice of state.config.loader.choices || []) {
+    const option = document.createElement('option');
+    option.value = choice.id;
+    option.textContent = choice.label;
+    option.dataset.url = choice.url;
+    elements.loaderChoice.appendChild(option);
+  }
+  if (selectedLoaderChoice && [...elements.loaderChoice.options].some((option) => option.value === selectedLoaderChoice)) {
+    elements.loaderChoice.value = selectedLoaderChoice;
+  }
+
+  elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || state.config.loader.url;
+  elements.imageUrl.textContent = state.config.image.url;
+  elements.parameterReleaseApi.textContent = state.configInfo?.source?.releaseApiHost || 'Not configured';
+  elements.parameterLoaderSource.textContent = state.configInfo?.source?.loaderHost || 'Not configured';
+  elements.parameterImageSource.textContent = state.configInfo?.source?.imageHost || 'Not configured';
+
+  if (state.configInfo?.overrides?.length > 0) {
+    elements.configBanner.hidden = false;
+    elements.configBannerText.textContent = [
+      `Config: ${state.configInfo.overrides.join(', ')}`,
+      `Release API: ${state.configInfo.source.releaseApiHost || 'not configured'}`,
+      `Maskrom loader: ${state.configInfo.source.loaderHost || 'not configured'}`,
+      `Image: ${state.configInfo.source.imageHost || 'not configured'}`
+    ].join(' | ');
+  } else {
+    elements.configBanner.hidden = true;
+    elements.configBannerText.textContent = '';
+  }
+
+  updateSourceControls();
 }
 
 function appendLog(line) {
@@ -216,9 +286,64 @@ elements.quickUpdateButton.addEventListener('click', () => {
 
 elements.rebootButton.addEventListener('click', () => performReboot());
 
+elements.flashTab.addEventListener('click', () => switchView('flash'));
+elements.parametersTab.addEventListener('click', () => switchView('parameters'));
+
 elements.documentationButton.addEventListener('click', async () => {
   try {
     await window.rkGui.openDocumentation();
+  } catch (error) {
+    setStatus('Error', 'error');
+    appendLog(error.message);
+  }
+});
+
+elements.loadConfigButton.addEventListener('click', async () => {
+  try {
+    const result = await window.rkGui.loadExternalConfigFile();
+    if (result.canceled) return;
+    elements.configEditor.value = result.json;
+    setStatus('Configuration loaded');
+    appendLog(`Configuration loaded from ${result.filePath}. Click Apply to save and use it.`);
+  } catch (error) {
+    setStatus('Error', 'error');
+    appendLog(error.message);
+  }
+});
+
+elements.exportConfigButton.addEventListener('click', async () => {
+  try {
+    const result = await window.rkGui.exportConfigFile(elements.configEditor.value);
+    if (result.canceled) return;
+    setStatus('Configuration exported', 'ok');
+    appendLog(`Configuration exported to ${result.filePath}.`);
+  } catch (error) {
+    setStatus('Error', 'error');
+    appendLog(error.message);
+  }
+});
+
+elements.resetConfigButton.addEventListener('click', async () => {
+  try {
+    const result = await window.rkGui.resetConfig();
+    if (result.canceled) return;
+    elements.configEditor.value = result.json;
+    renderConfigurationState(result);
+    setStatus('Defaults restored', 'ok');
+    appendLog(`Configuration reset to defaults and saved to ${result.filePath}.`);
+  } catch (error) {
+    setStatus('Error', 'error');
+    appendLog(error.message);
+  }
+});
+
+elements.applyConfigButton.addEventListener('click', async () => {
+  try {
+    const result = await window.rkGui.applyConfig(elements.configEditor.value);
+    elements.configEditor.value = result.json;
+    renderConfigurationState(result);
+    setStatus('Configuration applied', 'ok');
+    appendLog(`Configuration applied and saved to ${result.filePath}.`);
   } catch (error) {
     setStatus('Error', 'error');
     appendLog(error.message);
@@ -234,26 +359,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (state.simulation) {
     setStatus('Simulation');
   }
-  for (const choice of state.config.loader.choices || []) {
-    const option = document.createElement('option');
-    option.value = choice.id;
-    option.textContent = choice.label;
-    option.dataset.url = choice.url;
-    elements.loaderChoice.appendChild(option);
-  }
-  elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || state.config.loader.url;
   elements.loaderChoice.addEventListener('change', () => {
-    elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || state.config.loader.url;
+    elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || currentPublicConfig?.loader?.url || '';
   });
-  elements.imageUrl.textContent = state.config.image.url;
-  if (state.configInfo?.overrides?.length > 0) {
-    elements.configBanner.hidden = false;
-    elements.configBannerText.textContent = [
-      `Config: ${state.configInfo.overrides.join(', ')}`,
-      `Release API: ${state.configInfo.source.releaseApiHost || 'not configured'}`,
-      `Maskrom loader: ${state.configInfo.source.loaderHost || 'not configured'}`,
-      `Image: ${state.configInfo.source.imageHost || 'not configured'}`
-    ].join(' | ');
-  }
-  updateSourceControls();
+  renderConfigurationState(state);
+  elements.configEditor.value = await window.rkGui.getConfigJson();
 });
