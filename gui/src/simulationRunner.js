@@ -1,3 +1,5 @@
+const { mappedProgressValue } = require('./toolRunner');
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -22,7 +24,7 @@ function createSimulationRunner({ emit, delay = sleep }) {
       emit('log', { line: 'Simulation: writing image.' });
       for (const value of [1, 25, 50, 75, 100]) {
         await delay(150);
-        emit('progress', { label: options.progressLabel || 'Image', value });
+        emit('progress', { label: options.progressLabel || 'Image', value: mappedProgressValue(value, options) });
         emit('log', { line: `Simulation Write LBA from file (${value}%)` });
       }
       return { stdout: 'Simulation image OK.\n', stderr: '' };

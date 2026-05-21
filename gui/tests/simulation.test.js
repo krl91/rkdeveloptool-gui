@@ -54,6 +54,28 @@ test('simulation db/wl/rd completes without invoking the real rkdeveloptool', as
   ]);
 });
 
+test('simulation write progress respects the assigned global progress range', async () => {
+  const { events, runner } = createRunner();
+
+  await runner(['wl', '0', '/tmp/image.img'], {
+    progressLabel: 'Image 2/2',
+    progressOffset: 75,
+    progressScale: 0.25
+  });
+
+  const progressValues = events
+    .filter((event) => event.type === 'progress')
+    .map((event) => event.payload);
+
+  assert.deepEqual(progressValues, [
+    { label: 'Image 2/2', value: 75 },
+    { label: 'Image 2/2', value: 81 },
+    { label: 'Image 2/2', value: 88 },
+    { label: 'Image 2/2', value: 94 },
+    { label: 'Image 2/2', value: 100 }
+  ]);
+});
+
 test('simulation rejects unsupported commands clearly', async () => {
   const { runner } = createRunner();
   await assert.rejects(() => runner(['ef']), /Unsupported simulation command: ef/);
