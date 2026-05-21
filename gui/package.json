@@ -1,6 +1,6 @@
 {
   "name": "rkdeveloptool-gui",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Cross-platform Electron GUI for rkdeveloptool firmware updates.",
   "author": "OpenIPC contributors",
   "homepage": "https://github.com/krl91/rkdeveloptool-gui",
