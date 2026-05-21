@@ -92,6 +92,7 @@ test('parameters view exposes JSON import export and apply actions', () => {
   assert.match(css, /#configEditor\s*\{[\s\S]*font:\s*12px\/1\.45 ui-monospace/);
   assert.match(css, /\.danger-secondary\s*\{[\s\S]*color:\s*var\(--danger\);/);
   assert.match(preload, /getConfigJson: \(\) => ipcRenderer\.invoke\('app:getConfigJson'\)/);
+  assert.match(preload, /getOperationState: \(\) => ipcRenderer\.invoke\('app:getOperationState'\)/);
   assert.match(preload, /loadExternalConfigFile: \(\) => ipcRenderer\.invoke\('app:loadExternalConfigFile'\)/);
   assert.match(preload, /exportConfigFile: \(jsonText\) => ipcRenderer\.invoke\('app:exportConfigFile', jsonText\)/);
   assert.match(preload, /applyConfig: \(jsonText\) => ipcRenderer\.invoke\('app:applyConfig', jsonText\)/);
@@ -191,10 +192,15 @@ test('reboot stays available during downloads and is blocked only while flashing
   );
 
   assert.match(main, /flashBusy:\s*false/);
+  assert.match(main, /downloadBusy:\s*false/);
+  assert.match(main, /toolBusy:\s*false/);
   assert.match(main, /rebooting:\s*false/);
+  assert.match(main, /function operationStatePayload\(\)[\s\S]*downloadBusy: appState\.downloadBusy[\s\S]*toolBusy: appState\.toolBusy/);
+  assert.match(main, /ipcMain\.handle\('app:getOperationState', \(\) => operationStatePayload\(\)\);/);
   assert.match(main, /emit\('flash-busy', \{ value: true \}\);[\s\S]*await runTool\(\['db', loaderPath\]/);
   assert.match(main, /await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], imageProgress\.flash\);[\s\S]*emit\('flash-busy', \{ value: false \}\);/);
   assert.match(rebootHandler, /if \(appState\.flashBusy\) \{[\s\S]*Cannot reboot while a flash command is running\./);
+  assert.match(rebootHandler, /if \(appState\.toolBusy\) \{[\s\S]*Cannot reboot while rkdeveloptool is still running\./);
   assert.doesNotMatch(rebootHandler, /if \(appState\.busy\)/);
   assert.doesNotMatch(rebootHandler, /emit\('busy'/);
   assert.match(renderer, /let flashBusy = false;/);
@@ -203,6 +209,15 @@ test('reboot stays available during downloads and is blocked only while flashing
   assert.match(renderer, /if \(event\.type === 'flash-busy'\) setFlashBusy\(event\.value\);/);
   assert.match(renderer, /const state = await window\.rkGui\.getInitialState\(\);[\s\S]*rebootAvailable = true;[\s\S]*updateRebootButton\(\);/);
   assert.doesNotMatch(performRebootBlock, /rebootAvailable = false;/);
+});
+
+test('renderer proposes reboot only after progress is complete and operations are idle', () => {
+  assert.match(renderer, /function progressIsComplete\(\)[\s\S]*Number\(elements\.progressBar\.value\) >= 100;/);
+  assert.match(renderer, /function operationIsIdle\(state\)[\s\S]*!state\.busy[\s\S]*!state\.downloadBusy[\s\S]*!state\.flashBusy[\s\S]*!state\.toolBusy/);
+  assert.match(renderer, /async function waitForRebootProposalReady\(\{ timeoutMs = 15000, intervalMs = 100 \} = \{\}\)/);
+  assert.match(renderer, /const state = await window\.rkGui\.getOperationState\(\);[\s\S]*if \(progressIsComplete\(\) && operationIsIdle\(state\)\)/);
+  assert.match(renderer, /const rebootReady = await waitForRebootProposalReady\(\);[\s\S]*if \(!rebootReady\)[\s\S]*Reboot proposal skipped: progress is not complete or an operation is still running\./);
+  assert.match(renderer, /const rebootReady = await waitForRebootProposalReady\(\);[\s\S]*await waitForUiPaint\(\);[\s\S]*await performReboot\(\{ confirmFirst: true \}\);/);
 });
 
 test('main process loads a loader prerequisite before image writes from Maskrom', () => {

@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('rkGui', {
   getInitialState: () => ipcRenderer.invoke('app:getInitialState'),
+  getOperationState: () => ipcRenderer.invoke('app:getOperationState'),
   chooseFile: (kind) => ipcRenderer.invoke('app:chooseFile', kind),
   confirmUpdate: (options) => ipcRenderer.invoke('app:confirmUpdate', options),
   confirmReboot: () => ipcRenderer.invoke('app:confirmReboot'),

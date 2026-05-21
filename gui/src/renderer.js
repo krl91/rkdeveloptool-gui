@@ -197,6 +197,34 @@ function waitForUiPaint() {
   });
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function progressIsComplete() {
+  return Number(elements.progressBar.value) >= 100;
+}
+
+function operationIsIdle(state) {
+  return Boolean(state)
+    && !state.busy
+    && !state.downloadBusy
+    && !state.flashBusy
+    && !state.toolBusy;
+}
+
+async function waitForRebootProposalReady({ timeoutMs = 15000, intervalMs = 100 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() <= deadline) {
+    const state = await window.rkGui.getOperationState();
+    if (progressIsComplete() && operationIsIdle(state)) {
+      return true;
+    }
+    await sleep(intervalMs);
+  }
+  return false;
+}
+
 function collectOptions() {
   return {
     updateLoader: elements.updateLoader.checked,
@@ -233,6 +261,12 @@ async function runUpdate(options) {
     setStatus('Done', 'ok');
     rebootAvailable = true;
     updateRebootButton();
+    await waitForUiPaint();
+    const rebootReady = await waitForRebootProposalReady();
+    if (!rebootReady) {
+      appendLog('Reboot proposal skipped: progress is not complete or an operation is still running.');
+      return;
+    }
     await waitForUiPaint();
     await performReboot({ confirmFirst: true });
   } catch (error) {

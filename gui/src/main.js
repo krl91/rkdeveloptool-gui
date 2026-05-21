@@ -54,7 +54,9 @@ let appState = {
   rkdeveloptoolSearchPaths: [],
   simulation: false,
   busy: false,
+  downloadBusy: false,
   flashBusy: false,
+  toolBusy: false,
   rebooting: false,
   allowedLocalPaths: new Set(),
   windowlessTransition: false
@@ -147,19 +149,43 @@ function emit(type, payload = {}) {
   }
 }
 
-function runTool(args, options = {}) {
-  if (appState.simulation) {
-    return createSimulationRunner({ emit })(args, options);
-  }
-  return rkdeveloptoolCommandSequencer.run(() => {
-    const runner = createToolRunner({
-      toolPath: appState.rkdeveloptoolPath,
-      config: appState.config,
-      searchPaths: appState.rkdeveloptoolSearchPaths,
-      emit
+function operationStatePayload() {
+  return {
+    busy: appState.busy,
+    downloadBusy: appState.downloadBusy,
+    flashBusy: appState.flashBusy,
+    toolBusy: appState.toolBusy,
+    rebooting: appState.rebooting
+  };
+}
+
+function emitOperationState() {
+  emit('operation-state', operationStatePayload());
+}
+
+function setOperationFlag(flag, value) {
+  appState[flag] = value;
+  emitOperationState();
+}
+
+async function runTool(args, options = {}) {
+  setOperationFlag('toolBusy', true);
+  try {
+    if (appState.simulation) {
+      return await createSimulationRunner({ emit })(args, options);
+    }
+    return await rkdeveloptoolCommandSequencer.run(() => {
+      const runner = createToolRunner({
+        toolPath: appState.rkdeveloptoolPath,
+        config: appState.config,
+        searchPaths: appState.rkdeveloptoolSearchPaths,
+        emit
+      });
+      return runner(args, options);
     });
-    return runner(args, options);
-  });
+  } finally {
+    setOperationFlag('toolBusy', false);
+  }
 }
 
 function timeoutSignal(timeoutMs) {
@@ -310,17 +336,19 @@ async function downloadAndVerify(asset, progressOptions) {
     emitPhaseProgress(progressOptions, 0, `Downloading ${asset.name}`);
   }
   const timeoutMs = normalizeTimeoutMs(appState.config?.network?.downloadTimeoutMs, 7200000);
-  const response = await fetchWithTimeout(asset.url, { timeoutMs });
-  if (!response.ok || !response.body) {
-    throw new Error(`Download failed (${response.status})`);
-  }
-
-  const total = Number(response.headers.get('content-length') || 0);
-  let received = 0;
-  const writer = fs.createWriteStream(tempDestination);
-  const reader = response.body.getReader();
-
+  let writer = null;
+  setOperationFlag('downloadBusy', true);
   try {
+    const response = await fetchWithTimeout(asset.url, { timeoutMs });
+    if (!response.ok || !response.body) {
+      throw new Error(`Download failed (${response.status})`);
+    }
+
+    const total = Number(response.headers.get('content-length') || 0);
+    let received = 0;
+    writer = fs.createWriteStream(tempDestination);
+    const reader = response.body.getReader();
+
     await new Promise((resolve, reject) => {
       writer.once('error', reject);
       writer.once('open', resolve);
@@ -364,8 +392,14 @@ async function downloadAndVerify(asset, progressOptions) {
     }
     return destination;
   } catch (error) {
-    await cleanupTempDownload(writer, tempDestination);
+    if (writer) {
+      await cleanupTempDownload(writer, tempDestination);
+    } else {
+      fs.rmSync(tempDestination, { force: true });
+    }
     throw explainDownloadFailure(asset, error);
+  } finally {
+    setOperationFlag('downloadBusy', false);
   }
 }
 
@@ -432,7 +466,7 @@ async function prepareLoader(options) {
 async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskrom loader...') {
   await ensureDeviceBeforeFlash('loader');
   emit('status', { message });
-  appState.flashBusy = true;
+  setOperationFlag('flashBusy', true);
   emit('flash-busy', { value: true });
   try {
     await runTool(['db', loaderPath], progressOptions);
@@ -443,7 +477,7 @@ async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskr
       error.message
     ].join('\n'));
   } finally {
-    appState.flashBusy = false;
+    setOperationFlag('flashBusy', false);
     emit('flash-busy', { value: false });
   }
 }
@@ -463,7 +497,7 @@ async function runUpdate(options) {
   if (appState.busy) {
     throw new Error('An update is already running.');
   }
-  appState.busy = true;
+  setOperationFlag('busy', true);
   emit('busy', { value: true });
   emit('progress', { label: 'Preparing', value: 0 });
 
@@ -521,7 +555,7 @@ async function runUpdate(options) {
         const imageProgress = splitProgressForSource(progressOptions, options.imageSource);
         const imagePath = await prepareFile('image', options.imageSource, options.imagePath, imageProgress.download);
         emit('status', { message: 'Writing image...' });
-        appState.flashBusy = true;
+        setOperationFlag('flashBusy', true);
         emit('flash-busy', { value: true });
         try {
           await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], imageProgress.flash);
@@ -532,7 +566,7 @@ async function runUpdate(options) {
             error.message
           ].join('\n'));
         } finally {
-          appState.flashBusy = false;
+          setOperationFlag('flashBusy', false);
           emit('flash-busy', { value: false });
         }
         emitPhaseProgress(progressOptions, 100);
@@ -543,7 +577,7 @@ async function runUpdate(options) {
     emit('done', { message: 'Update completed.' });
     return { ok: true };
   } finally {
-    appState.busy = false;
+    setOperationFlag('busy', false);
     emit('busy', { value: false });
   }
 }
@@ -724,6 +758,8 @@ ipcMain.handle('app:getInitialState', () => ({
   platform: os.platform(),
   simulation: appState.simulation
 }));
+
+ipcMain.handle('app:getOperationState', () => operationStatePayload());
 
 ipcMain.handle('app:getConfigJson', () => formatConfigJson(appState.config));
 
@@ -914,16 +950,19 @@ ipcMain.handle('app:reboot', async () => {
   if (appState.flashBusy) {
     throw new Error('Cannot reboot while a flash command is running.');
   }
+  if (appState.toolBusy) {
+    throw new Error('Cannot reboot while rkdeveloptool is still running.');
+  }
   if (appState.rebooting) {
     throw new Error('A reboot command is already running.');
   }
-  appState.rebooting = true;
+  setOperationFlag('rebooting', true);
   try {
     await runTool(['rd']);
     emit('log', { line: 'Reboot command sent.' });
     return { ok: true };
   } finally {
-    appState.rebooting = false;
+    setOperationFlag('rebooting', false);
   }
 });
 
