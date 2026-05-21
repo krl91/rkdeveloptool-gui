@@ -365,8 +365,24 @@ async function downloadAndVerify(asset, progressOptions) {
     return destination;
   } catch (error) {
     await cleanupTempDownload(writer, tempDestination);
-    throw error;
+    throw explainDownloadFailure(asset, error);
   }
+}
+
+function explainDownloadFailure(asset, error) {
+  const detail = error?.message || String(error);
+  if (/Invalid SHA256/i.test(detail)) {
+    return new Error([
+      `SHA256 verification failed for ${asset.name}.`,
+      'The update has been stopped before flashing.',
+      detail
+    ].join('\n'));
+  }
+  return new Error([
+    `Download failed for ${asset.name}.`,
+    'Check the network connection and try again. The update has been stopped before flashing.',
+    detail
+  ].join('\n'));
 }
 
 async function cleanupTempDownload(writer, tempDestination) {
@@ -420,6 +436,12 @@ async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskr
   emit('flash-busy', { value: true });
   try {
     await runTool(['db', loaderPath], progressOptions);
+  } catch (error) {
+    throw new Error([
+      'Maskrom loader flash failed.',
+      'The update has been stopped. Do not continue until the receiver is back in Maskrom mode.',
+      error.message
+    ].join('\n'));
   } finally {
     appState.flashBusy = false;
     emit('flash-busy', { value: false });
@@ -503,6 +525,12 @@ async function runUpdate(options) {
         emit('flash-busy', { value: true });
         try {
           await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], imageProgress.flash);
+        } catch (error) {
+          throw new Error([
+            'Image flash failed.',
+            'The update has been stopped. Keep the device connected and check the error before retrying.',
+            error.message
+          ].join('\n'));
         } finally {
           appState.flashBusy = false;
           emit('flash-busy', { value: false });

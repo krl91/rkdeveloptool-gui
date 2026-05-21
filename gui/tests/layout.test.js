@@ -166,6 +166,20 @@ test('main process checks the USB device immediately before each flash command',
   assert.match(renderer, /if \(event\.type === 'device'\)[\s\S]*updateDeviceLine\(event\.device\);/);
 });
 
+test('download and flash failures stop the workflow with clear user-facing errors', () => {
+  assert.match(main, /function explainDownloadFailure\(asset, error\)/);
+  assert.match(main, /Download failed for \$\{asset\.name\}\./);
+  assert.match(main, /The update has been stopped before flashing\./);
+  assert.match(main, /SHA256 verification failed for \$\{asset\.name\}\./);
+  assert.match(main, /Maskrom loader flash failed\./);
+  assert.match(main, /Image flash failed\./);
+  assert.match(main, /The update has been stopped\. Do not continue until the receiver is back in Maskrom mode\./);
+  assert.match(main, /The update has been stopped\. Keep the device connected and check the error before retrying\./);
+  assert.match(renderer, /function cleanErrorMessage\(error\)/);
+  assert.match(renderer, /Error invoking remote method/);
+  assert.match(renderer, /setProgress\('Failed', elements\.progressBar\.value\);/);
+});
+
 test('reboot stays available during downloads and is blocked only while flashing', () => {
   const rebootHandler = main.slice(
     main.indexOf("ipcMain.handle('app:reboot'"),
@@ -227,7 +241,7 @@ test('renderer protects reboot against duplicate clicks', () => {
   assert.match(renderer, /function updateRebootButton\(\)/);
   assert.match(renderer, /async function performReboot\(\{ confirmFirst = false \} = \{\}\)/);
   assert.match(renderer, /await window\.rkGui\.showRebootSuccess\(\)/);
-  assert.match(renderer, /const choice = await window\.rkGui\.confirmRebootFailure\(error\.message\)/);
+  assert.match(renderer, /const choice = await window\.rkGui\.confirmRebootFailure\(cleanErrorMessage\(error\)\)/);
   assert.match(renderer, /if \(choice === 'retry'\)[\s\S]*continue;/);
   assert.match(renderer, /if \(choice === 'force-close'\)[\s\S]*await window\.rkGui\.forceClose\(\);/);
   assert.match(renderer, /elements\.rebootButton\.addEventListener\('click', \(\) => performReboot\(\)\);/);

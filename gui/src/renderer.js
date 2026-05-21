@@ -151,6 +151,12 @@ function setProgress(label, value) {
   elements.progressBar.value = normalized;
 }
 
+function cleanErrorMessage(error) {
+  return String(error?.message || error || 'Unknown error')
+    .replace(/^Error invoking remote method '[^']+': Error:\s*/i, '')
+    .replace(/^Error:\s*/i, '');
+}
+
 function waitForUiPaint() {
   return new Promise((resolve) => {
     const raf = typeof window.requestAnimationFrame === 'function'
@@ -179,7 +185,7 @@ async function runUpdate(options) {
     confirmed = await window.rkGui.confirmUpdate(options);
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    appendLog(cleanErrorMessage(error));
     return;
   }
   if (!confirmed) {
@@ -200,7 +206,8 @@ async function runUpdate(options) {
     await performReboot({ confirmFirst: true });
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    setProgress('Failed', elements.progressBar.value);
+    appendLog(cleanErrorMessage(error));
   }
 }
 
@@ -223,8 +230,8 @@ async function performReboot({ confirmFirst = false } = {}) {
         return;
       } catch (error) {
         setStatus('Error', 'error');
-        appendLog(error.message);
-        const choice = await window.rkGui.confirmRebootFailure(error.message);
+        appendLog(cleanErrorMessage(error));
+        const choice = await window.rkGui.confirmRebootFailure(cleanErrorMessage(error));
         if (choice === 'retry') {
           continue;
         }
@@ -294,7 +301,7 @@ elements.documentationButton.addEventListener('click', async () => {
     await window.rkGui.openDocumentation();
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    appendLog(cleanErrorMessage(error));
   }
 });
 
@@ -307,7 +314,7 @@ elements.loadConfigButton.addEventListener('click', async () => {
     appendLog(`Configuration loaded from ${result.filePath}. Click Apply to save and use it.`);
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    appendLog(cleanErrorMessage(error));
   }
 });
 
@@ -319,7 +326,7 @@ elements.exportConfigButton.addEventListener('click', async () => {
     appendLog(`Configuration exported to ${result.filePath}.`);
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    appendLog(cleanErrorMessage(error));
   }
 });
 
@@ -333,7 +340,7 @@ elements.resetConfigButton.addEventListener('click', async () => {
     appendLog(`Configuration reset to defaults and saved to ${result.filePath}.`);
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    appendLog(cleanErrorMessage(error));
   }
 });
 
@@ -346,7 +353,7 @@ elements.applyConfigButton.addEventListener('click', async () => {
     appendLog(`Configuration applied and saved to ${result.filePath}.`);
   } catch (error) {
     setStatus('Error', 'error');
-    appendLog(error.message);
+    appendLog(cleanErrorMessage(error));
   }
 });
 

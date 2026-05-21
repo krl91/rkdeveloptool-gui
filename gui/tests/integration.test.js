@@ -112,6 +112,24 @@ test('integration runner surfaces rkdeveloptool failures with command output', a
   assert.deepEqual(mock.calls(), ['db /tmp/loader.bin']);
 });
 
+test('integration workflow stops before the image when loader flash fails', async () => {
+  const mock = createMockRunner('fail');
+  const plan = plannedUpdateKinds({ updateLoader: true, updateImage: true });
+
+  await assert.rejects(async () => {
+    for (const kind of plan) {
+      if (kind === 'loader') {
+        await mock.run(['db', '/tmp/loader.bin'], { progressLabel: 'Loader' });
+      }
+      if (kind === 'image') {
+        await mock.run(['wl', '0', '/tmp/image.img'], { progressLabel: 'Image' });
+      }
+    }
+  }, /forced mock failure/);
+
+  assert.deepEqual(mock.calls(), ['db /tmp/loader.bin']);
+});
+
 test('integration runner explains invalid Maskrom loader and image write failures', () => {
   assert.match(
     explainRkdeveloptoolFailure(['db', '/tmp/u-boot.bin'], '\u001b[30;41mOpening loader failed, exiting download boot!\u001b[0m'),
