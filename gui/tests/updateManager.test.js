@@ -33,6 +33,24 @@ function streamFrom(chunks) {
   };
 }
 
+function streamThatFailsAfter(chunks, error) {
+  let index = 0;
+  return {
+    getReader() {
+      return {
+        async read() {
+          if (index < chunks.length) {
+            const value = chunks[index];
+            index += 1;
+            return { done: false, value };
+          }
+          throw error;
+        }
+      };
+    }
+  };
+}
+
 function jsonResponse(body) {
   return {
     ok: true,
@@ -49,6 +67,17 @@ function binaryResponse(buffer, contentLength = buffer.length) {
       get: (name) => name.toLowerCase() === 'content-length' ? String(contentLength) : ''
     },
     body: streamFrom([buffer])
+  };
+}
+
+function interruptedBinaryResponse(chunks, error, contentLength) {
+  return {
+    ok: true,
+    status: 200,
+    headers: {
+      get: (name) => name.toLowerCase() === 'content-length' ? String(contentLength) : ''
+    },
+    body: streamThatFailsAfter(chunks, error)
   };
 }
 
@@ -135,6 +164,31 @@ test('partial application update download rolls back and does not leave an insta
     timeoutMs: 1000
   }), /Incomplete update download/);
 
+  assert.equal(fs.existsSync(path.join(tmp, asset.name)), false);
+  assert.equal(fs.existsSync(path.join(tmp, `${asset.name}.download`)), false);
+});
+
+test('interrupted application update download rolls back partial file', async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'rk-gui-app-update-network-cut-'));
+  const asset = {
+    name: 'RK.Firmware.Updater-0.1.3-amd64.deb',
+    browser_download_url: 'https://example.com/update.deb',
+    digest: `sha256:${sha256(Buffer.from('complete'))}`
+  };
+  const progress = [];
+
+  await assert.rejects(() => downloadUpdateAsset(asset, {
+    downloadDir: tmp,
+    fetchImpl: async () => interruptedBinaryResponse(
+      [Buffer.from('part')],
+      new Error('network connection lost'),
+      10
+    ),
+    timeoutMs: 1000,
+    onProgress: (value) => progress.push(value)
+  }), /network connection lost/);
+
+  assert.deepEqual(progress, [40]);
   assert.equal(fs.existsSync(path.join(tmp, asset.name)), false);
   assert.equal(fs.existsSync(path.join(tmp, `${asset.name}.download`)), false);
 });
