@@ -60,8 +60,46 @@ function appBody(options = {}) {
   const statusClass = options.statusClass || '';
   const log = options.log || '';
   const rebootDisabled = options.rebootEnabled ? '' : 'disabled';
+  const view = options.view || 'flash';
+  const flashSelected = view === 'flash';
+  const parametersSelected = view === 'parameters';
+  const configJson = JSON.stringify({
+    rkdeveloptoolPath: '',
+    commandPrefix: [],
+    releasePageUrl: 'https://github.com/OpenIPC/sbc-groundstations/releases/tag/buildroot-snapshot',
+    releaseApiUrl: 'https://api.github.com/repos/OpenIPC/sbc-groundstations/releases/tags/buildroot-snapshot',
+    documentationUrl: 'https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md',
+    rkdeveloptoolCommandDelayMs: 2000,
+    network: {
+      metadataTimeoutMs: 300000,
+      downloadTimeoutMs: 7200000
+    },
+    loader: {
+      assetName: 'rk356x_spl_loader_ddr1056_v1.10.111.bin',
+      url: loaderUrl,
+      choices: [
+        {
+          id: 'rk356x-v1.10.111',
+          label: 'Radxa RK356x SPL v1.10.111',
+          assetName: 'rk356x_spl_loader_ddr1056_v1.10.111.bin',
+          url: loaderUrl
+        }
+      ]
+    },
+    image: {
+      assetName: 'runcam_wifilink_sdcard.img',
+      url: imageUrl,
+      lba: 0
+    }
+  }, null, 2);
 
   return `
+<div class="app-layout">
+<nav class="sidebar" aria-label="Main navigation">
+  <div class="sidebar-title">RK</div>
+  <button id="flashTab" class="nav-tab ${flashSelected ? 'active' : ''}" type="button" data-view="flash" ${flashSelected ? 'aria-current="page"' : ''}>Flash</button>
+  <button id="parametersTab" class="nav-tab ${parametersSelected ? 'active' : ''}" type="button" data-view="parameters" ${parametersSelected ? 'aria-current="page"' : ''}>Parameters</button>
+</nav>
 <main class="shell">
   <header class="topbar">
     <div>
@@ -74,6 +112,7 @@ function appBody(options = {}) {
     </div>
   </header>
 
+  <section id="flashView" class="view ${flashSelected ? 'active' : ''}" data-view-panel="flash" ${flashSelected ? '' : 'hidden'}>
   <section class="panel controls">
     <div class="section-header">
       <h2>Update</h2>
@@ -140,7 +179,39 @@ function appBody(options = {}) {
     </div>
     <pre id="log">${log}</pre>
   </section>
-</main>`;
+  </section>
+
+  <section id="parametersView" class="view ${parametersSelected ? 'active' : ''}" data-view-panel="parameters" ${parametersSelected ? '' : 'hidden'}>
+    <section class="panel parameters-panel">
+      <div class="section-header">
+        <h2>Parameters</h2>
+        <div class="parameters-actions">
+          <button id="loadConfigButton" class="secondary" type="button">Load external file</button>
+          <button id="exportConfigButton" class="secondary" type="button">Export file</button>
+          <button id="resetConfigButton" class="danger-secondary" type="button">Reset</button>
+          <button id="applyConfigButton" class="primary" type="button">Apply</button>
+        </div>
+      </div>
+      <p class="parameters-help">Edit the complete JSON configuration. Apply saves it as the application user configuration.</p>
+      <textarea id="configEditor" spellcheck="false" aria-label="JSON configuration">${configJson}</textarea>
+      <div class="parameters-grid">
+        <article class="parameter-row">
+          <span>Release API</span>
+          <strong id="parameterReleaseApi">api.github.com</strong>
+        </article>
+        <article class="parameter-row">
+          <span>Maskrom loader source</span>
+          <strong id="parameterLoaderSource">dl.radxa.com</strong>
+        </article>
+        <article class="parameter-row">
+          <span>Image source</span>
+          <strong id="parameterImageSource">github.com</strong>
+        </article>
+      </div>
+    </section>
+  </section>
+</main>
+</div>`;
 }
 
 function dialogBody(title, message, primary, secondary, warning = false) {
@@ -234,6 +305,10 @@ function main() {
   renderUrlScreenshot(chrome, '01-no-device-simulation-choice.png', noDevicePageUrl, 1040, 820);
 
   renderScreenshot(chrome, '02-main-window.png', htmlPage(appBody()), 1280, 900);
+
+  renderScreenshot(chrome, '06-parameters-tab.png', htmlPage(appBody({
+    view: 'parameters'
+  })), 1280, 900);
 
   renderScreenshot(chrome, '03-confirm-update.png', htmlPage(dialogBody(
     'Confirm firmware update',

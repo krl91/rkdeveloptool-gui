@@ -48,7 +48,8 @@ parsing, binary discovery, command prefixing, GitHub asset/SHA256 resolution,
 local SHA256 calculation, and the mandatory Maskrom-loader-before-image update
 order. They also cover the mandatory delay between consecutive `rkdeveloptool`
 commands and the renderer behavior that keeps selected local/online sources
-when **Flash full image** is used.
+when **Flash full image** is used. Layout tests also cover the left navigation
+tabs and the Parameters JSON editor actions.
 Integration tests use `tests/fixtures/mock-rkdeveloptool.js` to validate the
 GUI process runner against a controlled `rkdeveloptool` replacement without
 touching real USB hardware.
@@ -87,6 +88,11 @@ The app looks for `rkdeveloptool` in this order:
 Defaults are in `config/default.json`. Override them with a
 `rkdeveloptool-gui.config.json` file in the current working directory, in the
 Electron user data directory, or by setting `RKDEVELOPTOOL_GUI_CONFIG`.
+
+The running application also exposes a **Parameters** tab. It shows the active
+JSON configuration, can load an external JSON file into the editor, export the
+current JSON, apply validated changes to the Electron user data configuration
+file, or reset everything to the packaged defaults.
 
 The GitHub release page and API URLs are configurable. For online updates, the
 app reads the release metadata, finds the requested asset, and verifies the

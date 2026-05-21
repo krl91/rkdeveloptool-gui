@@ -93,6 +93,12 @@ device line clearly says `Simulation`.
 Use **User guide** in the top-right corner to open the online documentation in
 your default web browser.
 
+The left side of the window contains two tabs:
+
+- **Flash:** the normal update workflow for loading a Maskrom loader and/or
+  writing an image.
+- **Parameters:** the full JSON configuration editor for advanced settings.
+
 At startup, the application can also check the GitHub release page for a newer
 RK Firmware Updater version. If your computer is offline, this check is skipped.
 When a newer version is available, the application asks before downloading the
@@ -131,6 +137,30 @@ application logs the calculated SHA256 for traceability.
 
 The configured default URLs are visible in the window. They can be changed by
 editing the GUI configuration file. See [GUI configuration](../README.md#gui-configuration).
+
+## Parameters Tab
+
+Use the **Parameters** tab when you need to inspect or edit the complete JSON
+configuration used by the application.
+
+![Parameters tab](assets/screenshots/06-parameters-tab.png)
+
+The editor shows the active JSON configuration. It is intended for advanced
+users and maintainers who need to change URLs, loader choices, image names,
+timeouts, update behavior, or local command settings.
+
+Available actions:
+
+- **Load external file:** reads a JSON file from your computer and replaces the
+  editor contents. The configuration is not used until you click **Apply**.
+- **Export file:** saves a copy of the JSON currently shown in the editor.
+- **Reset:** restores the packaged default configuration after confirmation.
+- **Apply:** validates the JSON, saves it as the user configuration, and applies
+  it immediately.
+
+If the JSON is invalid, the application keeps the previous configuration and
+shows an error. Reset is useful if a manual edit prevents downloads or flashing
+from working correctly.
 
 ## Full Image Flash
 
@@ -210,6 +240,10 @@ timeouts. Application self-update checks can also be configured or disabled
 with the `autoUpdate` section. The delay between consecutive `rkdeveloptool`
 commands is configurable with `rkdeveloptoolCommandDelayMs`; the default is
 2000 ms so the USB device has time to settle between operations.
+
+The same configuration can be viewed and edited from the **Parameters** tab in
+the application. Click **Apply** to save changes to the Electron user data
+configuration file, or **Reset** to restore the packaged defaults.
 
 Default network timeouts are deliberately long:
 

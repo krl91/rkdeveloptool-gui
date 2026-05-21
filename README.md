@@ -39,6 +39,12 @@ Maskrom loader and a complete OpenIPC image, verifies online image downloads
 with SHA256, loads the Maskrom loader before writing the image, shows progress,
 and offers to reboot the device at the end.
 
+The GUI uses a left navigation bar with two tabs:
+
+- **Flash** for the normal loader/image update workflow.
+- **Parameters** for viewing, importing, exporting, applying, and resetting the
+  full JSON configuration.
+
 If no device is connected, the application can start a simulation mode so users
 can explore the workflow safely.
 
@@ -316,6 +322,14 @@ does not attempt the update network check at startup.
 If a custom configuration file is loaded, the GUI shows a permanent warning
 banner and the confirmation dialog lists the active release, loader, and image
 source hosts before any flash operation starts.
+
+The packaged GUI also includes a **Parameters** tab. It displays the complete
+active JSON configuration and provides these actions:
+
+- **Load external file** to replace the editor contents with a JSON file.
+- **Export file** to save a copy of the JSON.
+- **Apply** to validate, save, and immediately use the edited configuration.
+- **Reset** to restore the packaged default configuration after confirmation.
 
 
 USB Notes
