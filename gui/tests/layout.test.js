@@ -29,6 +29,19 @@ test('mobile action row stacks controls and keeps buttons accessible', () => {
   assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*button\s*\{[\s\S]*width:\s*100%;/);
 });
 
+test('progress bar is shown above the Maskrom loader card', () => {
+  const progressIndex = html.indexOf('class="progress-block top-progress"');
+  const updateGridIndex = html.indexOf('class="update-grid"');
+  const loaderIndex = html.indexOf('<span>Maskrom loader</span>');
+  const actionRow = html.slice(html.indexOf('class="action-row"'), html.indexOf('</section>', html.indexOf('class="action-row"')));
+
+  assert.ok(progressIndex > 0);
+  assert.ok(progressIndex < updateGridIndex);
+  assert.ok(progressIndex < loaderIndex);
+  assert.doesNotMatch(actionRow, /progressBar/);
+  assert.match(css, /\.top-progress\s*\{[\s\S]*margin-bottom:\s*14px;/);
+});
+
 test('quick full-image button is visually marked as a warning and keeps selected sources', () => {
   assert.match(html, /id="quickUpdateButton"\s+class="warning"/);
   assert.match(css, /\.warning\s*\{[\s\S]*background:\s*var\(--warning\);/);

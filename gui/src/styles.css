@@ -353,6 +353,10 @@ button:disabled {
   min-width: 0;
 }
 
+.top-progress {
+  margin-bottom: 14px;
+}
+
 .progress-label {
   display: flex;
   justify-content: space-between;

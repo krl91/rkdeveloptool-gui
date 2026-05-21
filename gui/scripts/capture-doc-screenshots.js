@@ -123,6 +123,14 @@ function appBody(options = {}) {
       </div>
     </div>
 
+    <div class="progress-block top-progress">
+      <div class="progress-label">
+        <span id="progressLabel">${progressLabel}</span>
+        <span id="progressValue">${progress}%</span>
+      </div>
+      <progress id="progressBar" value="${progress}" max="100"></progress>
+    </div>
+
     <div class="update-grid">
       <article class="update-card">
         <label class="check-row">
@@ -163,13 +171,6 @@ function appBody(options = {}) {
 
     <div class="action-row">
       <button id="startButton" class="primary" type="button">Start</button>
-      <div class="progress-block">
-        <div class="progress-label">
-          <span id="progressLabel">${progressLabel}</span>
-          <span id="progressValue">${progress}%</span>
-        </div>
-        <progress id="progressBar" value="${progress}" max="100"></progress>
-      </div>
     </div>
   </section>
 
