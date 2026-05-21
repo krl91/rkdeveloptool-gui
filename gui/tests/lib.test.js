@@ -27,12 +27,15 @@ const {
   normalizeUpdateOptions,
   parseChecksumText,
   parseDevices,
+  phaseProgressRange,
   plannedUpdateKinds,
   progressFromLine,
+  mappedPhaseProgress,
   publicConfig,
   readJson,
   resolveSha256FromRelease,
   shouldHashLocalFile,
+  splitProgressForSource,
   sourceSummary,
   validateCommandPrefix,
   validateLocalPathSelection,
@@ -243,6 +246,40 @@ test('simulatedDevice is recognized as simulation-only', () => {
 test('progressFromLine extracts rkdeveloptool progress percentages', () => {
   assert.equal(progressFromLine('Write LBA from file (87%)'), 87);
   assert.equal(progressFromLine('Downloading bootloader...'), null);
+});
+
+test('online loader and online image progress is split into download and flash quarters', () => {
+  const loader = splitProgressForSource(phaseProgressRange(0, 2, 'loader'), 'online');
+  const image = splitProgressForSource(phaseProgressRange(1, 2, 'image'), 'online');
+
+  assert.deepEqual([
+    mappedPhaseProgress(loader.download, 0),
+    mappedPhaseProgress(loader.download, 100),
+    mappedPhaseProgress(loader.flash, 0),
+    mappedPhaseProgress(loader.flash, 100),
+    mappedPhaseProgress(image.download, 0),
+    mappedPhaseProgress(image.download, 100),
+    mappedPhaseProgress(image.flash, 0),
+    mappedPhaseProgress(image.flash, 100)
+  ], [0, 25, 25, 50, 50, 75, 75, 100]);
+});
+
+test('single online or local flash item uses the full progress range correctly', () => {
+  const onlineOnly = splitProgressForSource(phaseProgressRange(0, 1, 'loader'), 'online');
+  const localOnly = splitProgressForSource(phaseProgressRange(0, 1, 'image'), 'local');
+
+  assert.deepEqual([
+    mappedPhaseProgress(onlineOnly.download, 0),
+    mappedPhaseProgress(onlineOnly.download, 100),
+    mappedPhaseProgress(onlineOnly.flash, 0),
+    mappedPhaseProgress(onlineOnly.flash, 100)
+  ], [0, 50, 50, 100]);
+
+  assert.equal(localOnly.download, null);
+  assert.deepEqual([
+    mappedPhaseProgress(localOnly.flash, 0),
+    mappedPhaseProgress(localOnly.flash, 100)
+  ], [0, 100]);
 });
 
 test('githubApiFromReleasePage converts a GitHub release page to the API endpoint', () => {

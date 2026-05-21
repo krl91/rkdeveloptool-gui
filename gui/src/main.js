@@ -15,7 +15,10 @@ const {
   normalizeFileKind,
   normalizeTimeoutMs,
   normalizeUpdateOptions,
+  mappedPhaseProgress,
+  phaseProgressRange,
   plannedUpdateKinds,
+  splitProgressForSource,
   publicConfig,
   resolveSha256FromRelease,
   simulatedDevice,
@@ -373,31 +376,8 @@ function logMaskromAfterSuccessfulLoader() {
 }
 
 function emitPhaseProgress(progressOptions, percent, label = progressOptions.progressLabel) {
-  const value = Math.max(0, Math.min(100, Math.round(
-    progressOptions.progressOffset + (percent * progressOptions.progressScale)
-  )));
+  const value = mappedPhaseProgress(progressOptions, percent);
   emit('progress', { label, value });
-}
-
-function progressSubrange(progressOptions, startPercent, endPercent, label = progressOptions.progressLabel) {
-  return {
-    progressLabel: label,
-    progressOffset: progressOptions.progressOffset + (startPercent * progressOptions.progressScale),
-    progressScale: ((endPercent - startPercent) / 100) * progressOptions.progressScale
-  };
-}
-
-function splitProgressForSource(progressOptions, source) {
-  if (source === 'online') {
-    return {
-      prepare: progressSubrange(progressOptions, 0, 50),
-      flash: progressSubrange(progressOptions, 50, 100)
-    };
-  }
-  return {
-    prepare: null,
-    flash: progressOptions
-  };
 }
 
 async function runUpdate(options) {
@@ -413,11 +393,11 @@ async function runUpdate(options) {
     let loaderLoadedThisRun = false;
 
     for (const [index, kind] of plan.entries()) {
-      const progressOptions = {
-        progressLabel: `${kind === 'loader' ? 'Maskrom loader' : 'Image'} ${index + 1}/${plan.length}`,
-        progressOffset: (index / plan.length) * 100,
-        progressScale: 1 / plan.length
-      };
+      const progressOptions = phaseProgressRange(
+        index,
+        plan.length,
+        `${kind === 'loader' ? 'Maskrom loader' : 'Image'} ${index + 1}/${plan.length}`
+      );
 
       emitPhaseProgress(progressOptions, 0);
 
@@ -427,7 +407,7 @@ async function runUpdate(options) {
           source: options.loaderSource,
           path: options.loaderPath,
           loaderChoiceId: options.loaderChoiceId,
-          progressOptions: loaderProgress.prepare
+          progressOptions: loaderProgress.download
         });
         await writeLoader(loaderPath, loaderProgress.flash);
         emitPhaseProgress(progressOptions, 100);
@@ -460,7 +440,7 @@ async function runUpdate(options) {
         }
 
         const imageProgress = splitProgressForSource(progressOptions, options.imageSource);
-        const imagePath = await prepareFile('image', options.imageSource, options.imagePath, imageProgress.prepare);
+        const imagePath = await prepareFile('image', options.imageSource, options.imagePath, imageProgress.download);
         emit('status', { message: 'Writing image...' });
         appState.flashBusy = true;
         emit('flash-busy', { value: true });

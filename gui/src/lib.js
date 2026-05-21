@@ -146,6 +146,41 @@ function progressFromLine(line) {
   return match ? Number(match[1]) : null;
 }
 
+function phaseProgressRange(index, total, label = '') {
+  return {
+    progressLabel: label,
+    progressOffset: (index / total) * 100,
+    progressScale: 1 / total
+  };
+}
+
+function progressSubrange(progressOptions, startPercent, endPercent, label = progressOptions.progressLabel) {
+  return {
+    progressLabel: label,
+    progressOffset: progressOptions.progressOffset + (startPercent * progressOptions.progressScale),
+    progressScale: ((endPercent - startPercent) / 100) * progressOptions.progressScale
+  };
+}
+
+function splitProgressForSource(progressOptions, source) {
+  if (source === 'online') {
+    return {
+      download: progressSubrange(progressOptions, 0, 50),
+      flash: progressSubrange(progressOptions, 50, 100)
+    };
+  }
+  return {
+    download: null,
+    flash: progressOptions
+  };
+}
+
+function mappedPhaseProgress(progressOptions, percent) {
+  return Math.max(0, Math.min(100, Math.round(
+    progressOptions.progressOffset + (percent * progressOptions.progressScale)
+  )));
+}
+
 function githubApiFromReleasePage(url) {
   const match = String(url || '').match(/^https:\/\/github\.com\/([^/]+)\/([^/]+)\/releases\/tag\/([^/?#]+)/);
   if (!match) return '';
@@ -383,13 +418,17 @@ module.exports = {
   normalizeUpdateOptions,
   parseChecksumText,
   parseDevices,
+  phaseProgressRange,
   plannedUpdateKinds,
   progressFromLine,
+  progressSubrange,
   publicConfig,
   readJson,
   resolveSha256FromRelease,
+  mappedPhaseProgress,
   shouldHashLocalFile,
   simulatedDevice,
+  splitProgressForSource,
   sourceSummary,
   urlHost,
   isSafeExternalUrl,
