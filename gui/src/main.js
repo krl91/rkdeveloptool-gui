@@ -353,6 +353,13 @@ function logMaskromAfterSuccessfulLoader() {
   });
 }
 
+function emitPhaseProgress(progressOptions, percent) {
+  const value = Math.max(0, Math.min(100, Math.round(
+    progressOptions.progressOffset + (percent * progressOptions.progressScale)
+  )));
+  emit('progress', { label: progressOptions.progressLabel, value });
+}
+
 async function runUpdate(options) {
   if (appState.busy) {
     throw new Error('An update is already running.');
@@ -372,6 +379,8 @@ async function runUpdate(options) {
         progressScale: 1 / plan.length
       };
 
+      emitPhaseProgress(progressOptions, 0);
+
       if (kind === 'loader') {
         const loaderPath = await prepareLoader({
           source: options.loaderSource,
@@ -379,6 +388,7 @@ async function runUpdate(options) {
           loaderChoiceId: options.loaderChoiceId
         });
         await writeLoader(loaderPath, progressOptions);
+        emitPhaseProgress(progressOptions, 100);
         loaderLoadedThisRun = true;
       }
 
@@ -408,6 +418,7 @@ async function runUpdate(options) {
         const imagePath = await prepareFile('image', options.imageSource, options.imagePath);
         emit('status', { message: 'Writing image...' });
         await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
+        emitPhaseProgress(progressOptions, 100);
       }
     }
 

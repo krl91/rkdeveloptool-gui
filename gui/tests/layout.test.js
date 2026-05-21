@@ -103,6 +103,16 @@ test('main process loads a loader prerequisite before image writes from Maskrom'
   assert.doesNotMatch(main, /The device is still in Maskrom after loading the loader/);
 });
 
+test('main process assigns one progress range per selected flash step', () => {
+  assert.match(main, /function emitPhaseProgress\(progressOptions, percent\)/);
+  assert.match(main, /progressOptions\.progressOffset \+ \(percent \* progressOptions\.progressScale\)/);
+  assert.match(main, /progressOffset:\s*\(index \/ plan\.length\) \* 100/);
+  assert.match(main, /progressScale:\s*1 \/ plan\.length/);
+  assert.match(main, /emitPhaseProgress\(progressOptions, 0\);/);
+  assert.match(main, /await writeLoader\(loaderPath, progressOptions\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
+  assert.match(main, /await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], progressOptions\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
+});
+
 test('custom configuration banner is present and hidden by default', () => {
   assert.match(html, /id="configBanner"\s+class="config-banner"\s+hidden/);
   assert.match(css, /\.config-banner\s*\{[\s\S]*background:\s*var\(--warning-bg\);/);
