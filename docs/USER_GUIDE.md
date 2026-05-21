@@ -119,6 +119,10 @@ workflow:
 - **Maskrom loader:** loaded first with `rkdeveloptool db <radxa-spl-loader>`
 - **Image:** complete OpenIPC image written with `rkdeveloptool wl 0 <image>`
 
+The global progress bar is shown at the top of the **Update** section, directly
+above the Maskrom loader and image choices, so progress remains visible before
+and during each flashing step.
+
 For the normal full-image workflow, keep both selected. If the image is selected
 while the device is still in Maskrom mode, the application loads the configured
 Maskrom loader before writing the image.
@@ -190,7 +194,8 @@ The application asks for confirmation before it starts writing anything.
 ## During The Update
 
 Keep the device connected and do not close the application while the update is
-running. The progress bar and log show what is happening.
+running. The progress bar at the top of the **Update** section and the log show
+what is happening.
 
 ![Update in progress](assets/screenshots/04-update-progress.png)
 
