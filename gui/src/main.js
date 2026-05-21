@@ -319,7 +319,48 @@ async function prepareOnlineLoader(options = {}) {
   return downloadAndVerify(await resolveLoaderAsset(options), options.progressOptions);
 }
 
+async function simulateDownloadAndVerify(asset, progressOptions) {
+  const downloadDir = path.join(app.getPath('userData'), 'downloads');
+  fs.mkdirSync(downloadDir, { recursive: true });
+  const assetName = path.basename(asset.name);
+  if (!assetName || assetName !== asset.name) {
+    throw new Error(`Unsafe asset name: ${asset.name}`);
+  }
+  const destination = path.join(downloadDir, assetName);
+
+  emit('status', { message: `Downloading ${asset.name}...` });
+  emit('log', { line: `Simulation download source ${asset.name}: ${asset.url}` });
+  setOperationFlag('downloadBusy', true);
+  try {
+    if (progressOptions) {
+      emitPhaseProgress(progressOptions, 0, `Downloading ${asset.name}`);
+    }
+    for (const value of [1, 25, 50, 75, 100]) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      if (progressOptions) {
+        emitPhaseProgress(progressOptions, value, `Downloading ${asset.name}`);
+      } else {
+        emit('progress', { label: `Downloading ${asset.name}`, value });
+      }
+      emit('log', { line: `Simulation download ${asset.name} (${value}%)` });
+    }
+
+    const content = Buffer.from(`simulation:${asset.name}\n`, 'utf8');
+    fs.writeFileSync(destination, content);
+    const actual = crypto.createHash('sha256').update(content).digest('hex');
+    emit('log', { line: `Simulation SHA256 ${asset.name}: ${actual}` });
+    emit('log', { line: `Simulation: ${asset.name} is ready.` });
+    return destination;
+  } finally {
+    setOperationFlag('downloadBusy', false);
+  }
+}
+
 async function downloadAndVerify(asset, progressOptions) {
+  if (appState.simulation) {
+    return simulateDownloadAndVerify(asset, progressOptions);
+  }
+
   const downloadDir = path.join(app.getPath('userData'), 'downloads');
   fs.mkdirSync(downloadDir, { recursive: true });
   const assetName = path.basename(asset.name);

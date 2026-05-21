@@ -46,7 +46,9 @@ The GUI uses a left navigation bar with two tabs:
   full JSON configuration.
 
 If no device is connected, the application can start a simulation mode so users
-can explore the workflow safely.
+can explore the workflow safely. Simulation mode performs a complete dry run:
+downloads, loader loading, image writing, and reboot all produce simulated
+progress without using the network or flashing a real device.
 
 
 Quick Install: Command-Line Tool

@@ -46,11 +46,38 @@ test('simulation db/wl/rd completes without invoking the real rkdeveloptool', as
     .map((event) => event.payload);
 
   assert.deepEqual(progressValues, [
+    { label: 'Loader', value: 1 },
+    { label: 'Loader', value: 25 },
+    { label: 'Loader', value: 50 },
+    { label: 'Loader', value: 75 },
+    { label: 'Loader', value: 100 },
     { label: 'Image', value: 1 },
     { label: 'Image', value: 25 },
     { label: 'Image', value: 50 },
     { label: 'Image', value: 75 },
     { label: 'Image', value: 100 }
+  ]);
+});
+
+test('simulation loader progress respects the assigned global progress range', async () => {
+  const { events, runner } = createRunner();
+
+  await runner(['db', '/tmp/loader.bin'], {
+    progressLabel: 'Maskrom loader 1/2',
+    progressOffset: 25,
+    progressScale: 0.25
+  });
+
+  const progressValues = events
+    .filter((event) => event.type === 'progress')
+    .map((event) => event.payload);
+
+  assert.deepEqual(progressValues, [
+    { label: 'Maskrom loader 1/2', value: 25 },
+    { label: 'Maskrom loader 1/2', value: 31 },
+    { label: 'Maskrom loader 1/2', value: 38 },
+    { label: 'Maskrom loader 1/2', value: 44 },
+    { label: 'Maskrom loader 1/2', value: 50 }
   ]);
 });
 

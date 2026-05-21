@@ -15,7 +15,11 @@ function createSimulationRunner({ emit, delay = sleep }) {
 
     if (command === 'db') {
       emit('log', { line: 'Simulation: loading Maskrom loader.' });
-      await delay(250);
+      for (const value of [1, 25, 50, 75, 100]) {
+        await delay(150);
+        emit('progress', { label: options.progressLabel || 'Maskrom loader', value: mappedProgressValue(value, options) });
+        emit('log', { line: `Simulation Downloading bootloader (${value}%)` });
+      }
       emit('log', { line: 'Simulation: Maskrom loader OK.' });
       return { stdout: 'Simulation Maskrom loader OK.\n', stderr: '' };
     }

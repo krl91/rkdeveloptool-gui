@@ -252,6 +252,25 @@ test('main process tracks each busy flag around its operation', () => {
   assert.match(rebootHandler, /setOperationFlag\('rebooting', true\);[\s\S]*await runTool\(\['rd'\]\);[\s\S]*finally \{[\s\S]*setOperationFlag\('rebooting', false\);/);
 });
 
+test('simulation mode simulates online firmware downloads without network fetch', () => {
+  const downloadBlock = main.slice(
+    main.indexOf('async function simulateDownloadAndVerify'),
+    main.indexOf('async function downloadAndVerify')
+  );
+  const downloadAndVerifyBlock = main.slice(
+    main.indexOf('async function downloadAndVerify'),
+    main.indexOf('function explainDownloadFailure')
+  );
+
+  assert.match(downloadAndVerifyBlock, /if \(appState\.simulation\) \{[\s\S]*return simulateDownloadAndVerify\(asset, progressOptions\);[\s\S]*\}/);
+  assert.match(downloadBlock, /Simulation download source \$\{asset\.name\}: \$\{asset\.url\}/);
+  assert.match(downloadBlock, /for \(const value of \[1, 25, 50, 75, 100\]\)/);
+  assert.match(downloadBlock, /emitPhaseProgress\(progressOptions, value, `Downloading \$\{asset\.name\}`\)/);
+  assert.match(downloadBlock, /setOperationFlag\('downloadBusy', true\);[\s\S]*finally \{[\s\S]*setOperationFlag\('downloadBusy', false\);/);
+  assert.match(downloadBlock, /fs\.writeFileSync\(destination, content\);/);
+  assert.match(downloadBlock, /Simulation SHA256 \$\{asset\.name\}/);
+});
+
 test('main process loads a loader prerequisite before image writes from Maskrom', () => {
   assert.match(main, /deviceNeedsLoaderBeforeImage\(device\)/);
   assert.match(main, /Device is in Maskrom mode; loading the configured Maskrom loader before writing the image\./);

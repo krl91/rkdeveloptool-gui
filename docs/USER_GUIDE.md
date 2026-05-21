@@ -90,6 +90,11 @@ USB devices such as keyboards, mice, storage devices, or debug adapters.
 The top of the window shows the detected USB device. In simulation mode, the
 device line clearly says `Simulation`.
 
+Simulation mode is a complete dry run. Online firmware downloads are simulated
+locally without network access, the Maskrom loader step, image write step, and
+reboot command all emit simulated logs and progress, and no real USB device is
+flashed.
+
 Use **User guide** in the top-right corner to open the online documentation in
 your default web browser.
 
