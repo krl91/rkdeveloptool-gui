@@ -108,6 +108,7 @@ function appBody(options = {}) {
     </div>
     <div class="topbar-actions">
       <button id="documentationButton" class="secondary" type="button">User guide</button>
+      <button id="connectDeviceButton" class="secondary" type="button">Connect device</button>
       <button id="rebootButton" class="secondary" type="button" ${rebootDisabled}>Reboot</button>
     </div>
   </header>

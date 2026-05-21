@@ -50,6 +50,10 @@ can explore the workflow safely. Simulation mode performs a complete dry run:
 downloads, loader loading, image writing, and reboot all produce simulated
 progress without using the network or flashing a real device.
 
+After a successful reboot command, the GUI checks device presence again with
+`rkdeveloptool ld`. If the device has disconnected, the flash actions are
+disabled until **Connect device** detects exactly one Rockusb device.
+
 
 Quick Install: Command-Line Tool
 --------------------------------

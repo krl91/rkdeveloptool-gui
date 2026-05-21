@@ -1,6 +1,7 @@
 const elements = {
   deviceLine: document.getElementById('deviceLine'),
   documentationButton: document.getElementById('documentationButton'),
+  connectDeviceButton: document.getElementById('connectDeviceButton'),
   rebootButton: document.getElementById('rebootButton'),
   flashTab: document.getElementById('flashTab'),
   parametersTab: document.getElementById('parametersTab'),
@@ -38,6 +39,7 @@ let busy = false;
 let flashBusy = false;
 let rebootAvailable = false;
 let rebootInFlight = false;
+let deviceConnected = true;
 let firmwareUpdateActive = false;
 let firmwareUpdateFinished = false;
 let firmwareProgressFloor = 0;
@@ -76,6 +78,12 @@ function updateRebootButton() {
   elements.rebootButton.disabled = flashBusy || rebootInFlight || !rebootAvailable;
 }
 
+function updateFlashActionButtons() {
+  elements.startButton.disabled = busy || !deviceConnected;
+  elements.quickUpdateButton.disabled = busy || !deviceConnected;
+  elements.connectDeviceButton.disabled = busy;
+}
+
 function setBusy(value) {
   busy = value;
   for (const button of document.querySelectorAll('button')) {
@@ -83,6 +91,7 @@ function setBusy(value) {
   }
   updateRebootButton();
   updateSourceControls();
+  updateFlashActionButtons();
 }
 
 function setFlashBusy(value) {
@@ -98,6 +107,7 @@ function updateSourceControls() {
   elements.loaderPath.disabled = !loaderLocal;
   elements.chooseImage.disabled = busy || !imageLocal;
   elements.imagePath.disabled = !imageLocal;
+  updateFlashActionButtons();
 }
 
 function renderConfigurationState(state) {
@@ -293,6 +303,7 @@ async function performReboot({ confirmFirst = false } = {}) {
         await window.rkGui.reboot();
         setStatus('Rebooted', 'ok');
         await window.rkGui.showRebootSuccess();
+        await refreshDeviceConnection({ afterReboot: true });
         return;
       } catch (error) {
         setStatus('Error', 'error');
@@ -313,6 +324,38 @@ async function performReboot({ confirmFirst = false } = {}) {
   }
 }
 
+async function refreshDeviceConnection({ afterReboot = false } = {}) {
+  try {
+    setStatus('Checking device...');
+    const result = await window.rkGui.detectDevice();
+    if (result.found) {
+      deviceConnected = true;
+      updateDeviceLine(result.device);
+      rebootAvailable = true;
+      updateRebootButton();
+      updateFlashActionButtons();
+      setStatus(result.simulation ? 'Simulation' : 'Device connected', 'ok');
+      appendLog(`Device detected: ${result.device.raw || elements.deviceLine.textContent}`);
+      return true;
+    }
+
+    deviceConnected = false;
+    elements.deviceLine.textContent = 'No Rockusb device detected. Connect the device, then click Connect device.';
+    setStatus(afterReboot ? 'Device disconnected' : 'No device', afterReboot ? 'ok' : 'error');
+    appendLog(afterReboot
+      ? 'No Rockusb device detected after reboot. Flash buttons are disabled until a device is connected again.'
+      : 'No Rockusb device detected. Flash buttons are disabled.');
+    updateFlashActionButtons();
+    return false;
+  } catch (error) {
+    deviceConnected = false;
+    setStatus('Error', 'error');
+    appendLog(cleanErrorMessage(error));
+    updateFlashActionButtons();
+    return false;
+  }
+}
+
 window.rkGui.onEvent((event) => {
   if (event.type === 'log') appendLog(event.line);
   if (event.type === 'status') setStatus(event.message);
@@ -320,12 +363,18 @@ window.rkGui.onEvent((event) => {
   if (event.type === 'busy') setBusy(event.value);
   if (event.type === 'flash-busy') setFlashBusy(event.value);
   if (event.type === 'device') {
+    deviceConnected = true;
     updateDeviceLine(event.device);
     rebootAvailable = true;
     updateRebootButton();
+    updateFlashActionButtons();
     if (event.simulation) {
       setStatus('Simulation');
     }
+  }
+  if (event.type === 'device-missing') {
+    deviceConnected = false;
+    updateFlashActionButtons();
   }
   if (event.type === 'done') {
     appendLog(event.message);
@@ -358,6 +407,7 @@ elements.quickUpdateButton.addEventListener('click', () => {
 });
 
 elements.rebootButton.addEventListener('click', () => performReboot());
+elements.connectDeviceButton.addEventListener('click', () => refreshDeviceConnection());
 
 elements.flashTab.addEventListener('click', () => switchView('flash'));
 elements.parametersTab.addEventListener('click', () => switchView('parameters'));
@@ -426,9 +476,15 @@ elements.applyConfigButton.addEventListener('click', async () => {
 window.addEventListener('DOMContentLoaded', async () => {
   const state = await window.rkGui.getInitialState();
   const device = state.device;
-  updateDeviceLine(device);
-  rebootAvailable = true;
+  deviceConnected = Boolean(device);
+  if (device) {
+    updateDeviceLine(device);
+  } else {
+    elements.deviceLine.textContent = 'No Rockusb device detected. Connect the device, then click Connect device.';
+  }
+  rebootAvailable = Boolean(device);
   updateRebootButton();
+  updateFlashActionButtons();
   if (state.simulation) {
     setStatus('Simulation');
   }

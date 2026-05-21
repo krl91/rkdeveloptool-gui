@@ -96,7 +96,8 @@ reboot command all emit simulated logs and progress, and no real USB device is
 flashed.
 
 Use **User guide** in the top-right corner to open the online documentation in
-your default web browser.
+your default web browser. Use **Connect device** to run a fresh
+`rkdeveloptool ld` detection pass after reconnecting a receiver.
 
 The left side of the window contains two tabs:
 
@@ -213,6 +214,13 @@ offers to reboot the device.
 
 Choose reboot when you are ready to restart the target device. The application
 uses `rkdeveloptool rd`.
+
+After the reboot success message, the application immediately runs
+`rkdeveloptool ld` again. If no Rockusb device is detected, **Start** and
+**Flash full image** are disabled so another flash cannot be started by
+mistake. Reconnect the receiver in flashing mode, then click **Connect device**.
+When exactly one Rockusb device is detected, the flash buttons are enabled
+again.
 
 ## Safety Checklist
 

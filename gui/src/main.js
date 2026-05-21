@@ -225,6 +225,21 @@ function setActiveDevice(device, simulation) {
   emit('device', { device, simulation });
 }
 
+async function detectAndSetSingleDevice() {
+  const devices = await detectSingleDevice();
+  if (devices.length === 1) {
+    setActiveDevice(devices[0], appState.simulation);
+    return { found: true, device: devices[0], simulation: appState.simulation };
+  }
+  if (devices.length > 1) {
+    throw new Error('Multiple Rockusb devices were detected. Keep only one device connected, then try again.');
+  }
+  appState.device = null;
+  appState.simulation = false;
+  emit('device-missing', {});
+  return { found: false };
+}
+
 async function ensureDeviceBeforeFlash(kind) {
   if (appState.simulation) {
     return appState.device;
@@ -801,6 +816,8 @@ ipcMain.handle('app:getInitialState', () => ({
 }));
 
 ipcMain.handle('app:getOperationState', () => operationStatePayload());
+
+ipcMain.handle('app:detectDevice', () => detectAndSetSingleDevice());
 
 ipcMain.handle('app:getConfigJson', () => formatConfigJson(appState.config));
 

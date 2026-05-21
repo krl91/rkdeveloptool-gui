@@ -207,7 +207,7 @@ test('reboot stays available during downloads and is blocked only while flashing
   assert.match(renderer, /elements\.rebootButton\.disabled = flashBusy \|\| rebootInFlight \|\| !rebootAvailable;/);
   assert.match(renderer, /function setFlashBusy\(value\) \{[\s\S]*updateRebootButton\(\);[\s\S]*\}/);
   assert.match(renderer, /if \(event\.type === 'flash-busy'\) setFlashBusy\(event\.value\);/);
-  assert.match(renderer, /const state = await window\.rkGui\.getInitialState\(\);[\s\S]*rebootAvailable = true;[\s\S]*updateRebootButton\(\);/);
+  assert.match(renderer, /const state = await window\.rkGui\.getInitialState\(\);[\s\S]*deviceConnected = Boolean\(device\);[\s\S]*rebootAvailable = Boolean\(device\);[\s\S]*updateRebootButton\(\);/);
   assert.doesNotMatch(performRebootBlock, /rebootAvailable = false;/);
 });
 
@@ -297,8 +297,35 @@ test('custom configuration banner is present and hidden by default', () => {
 
 test('header exposes a user guide button wired to the main process', () => {
   assert.match(html, /id="documentationButton"[\s\S]*User guide/);
+  assert.match(html, /id="connectDeviceButton"[\s\S]*Connect device/);
   assert.match(css, /\.topbar-actions\s*\{[\s\S]*display:\s*flex;/);
   assert.match(renderer, /window\.rkGui\.openDocumentation\(\)/);
+});
+
+test('connect device button runs ld and controls flash actions', () => {
+  const detectHandler = main.slice(
+    main.indexOf("ipcMain.handle('app:detectDevice'"),
+    main.indexOf("ipcMain.handle('app:getConfigJson'")
+  );
+  const refreshBlock = renderer.slice(
+    renderer.indexOf('async function refreshDeviceConnection'),
+    renderer.indexOf("window.rkGui.onEvent")
+  );
+  const updateFlashButtonsBlock = renderer.slice(
+    renderer.indexOf('function updateFlashActionButtons'),
+    renderer.indexOf('function setBusy')
+  );
+
+  assert.match(preload, /detectDevice: \(\) => ipcRenderer\.invoke\('app:detectDevice'\)/);
+  assert.match(main, /async function detectAndSetSingleDevice\(\)[\s\S]*const devices = await detectSingleDevice\(\);/);
+  assert.match(detectHandler, /detectAndSetSingleDevice\(\)/);
+  assert.match(updateFlashButtonsBlock, /elements\.startButton\.disabled = busy \|\| !deviceConnected;/);
+  assert.match(updateFlashButtonsBlock, /elements\.quickUpdateButton\.disabled = busy \|\| !deviceConnected;/);
+  assert.match(updateFlashButtonsBlock, /elements\.connectDeviceButton\.disabled = busy;/);
+  assert.match(refreshBlock, /const result = await window\.rkGui\.detectDevice\(\);/);
+  assert.match(refreshBlock, /if \(result\.found\)[\s\S]*deviceConnected = true;[\s\S]*updateFlashActionButtons\(\);/);
+  assert.match(refreshBlock, /deviceConnected = false;[\s\S]*No Rockusb device detected after reboot[\s\S]*updateFlashActionButtons\(\);/);
+  assert.match(renderer, /elements\.connectDeviceButton\.addEventListener\('click', \(\) => refreshDeviceConnection\(\)\);/);
 });
 
 test('renderer protects reboot against duplicate clicks', () => {
@@ -307,6 +334,7 @@ test('renderer protects reboot against duplicate clicks', () => {
   assert.match(renderer, /function updateRebootButton\(\)/);
   assert.match(renderer, /async function performReboot\(\{ confirmFirst = false \} = \{\}\)/);
   assert.match(renderer, /await window\.rkGui\.showRebootSuccess\(\)/);
+  assert.match(renderer, /await window\.rkGui\.showRebootSuccess\(\);[\s\S]*await refreshDeviceConnection\(\{ afterReboot: true \}\);/);
   assert.match(renderer, /const choice = await window\.rkGui\.confirmRebootFailure\(cleanErrorMessage\(error\)\)/);
   assert.match(renderer, /if \(choice === 'retry'\)[\s\S]*continue;/);
   assert.match(renderer, /if \(choice === 'force-close'\)[\s\S]*await window\.rkGui\.forceClose\(\);/);
