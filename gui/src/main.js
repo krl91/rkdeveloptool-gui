@@ -230,10 +230,10 @@ async function resolveLoaderAsset(options = {}) {
 }
 
 async function prepareOnlineLoader(options = {}) {
-  return downloadAndVerify(await resolveLoaderAsset(options));
+  return downloadAndVerify(await resolveLoaderAsset(options), options.progressOptions);
 }
 
-async function downloadAndVerify(asset) {
+async function downloadAndVerify(asset, progressOptions) {
   const downloadDir = path.join(app.getPath('userData'), 'downloads');
   fs.mkdirSync(downloadDir, { recursive: true });
   const assetName = path.basename(asset.name);
@@ -246,6 +246,9 @@ async function downloadAndVerify(asset) {
 
   emit('status', { message: `Downloading ${asset.name}...` });
   emit('log', { line: `Download source ${asset.name}: ${asset.url}` });
+  if (progressOptions) {
+    emitPhaseProgress(progressOptions, 0, `Downloading ${asset.name}`);
+  }
   const timeoutMs = normalizeTimeoutMs(appState.config?.network?.downloadTimeoutMs, 7200000);
   const response = await fetchWithTimeout(asset.url, { timeoutMs });
   if (!response.ok || !response.body) {
@@ -276,7 +279,11 @@ async function downloadAndVerify(asset) {
         });
       }
       if (total > 0) {
-        emit('progress', { label: `Downloading ${asset.name}`, value: Math.floor((received / total) * 100) });
+        if (progressOptions) {
+          emitPhaseProgress(progressOptions, Math.floor((received / total) * 100), `Downloading ${asset.name}`);
+        } else {
+          emit('progress', { label: `Downloading ${asset.name}`, value: Math.floor((received / total) * 100) });
+        }
       }
     }
 
@@ -291,6 +298,9 @@ async function downloadAndVerify(asset) {
       emit('log', { line: `SHA256 OK ${asset.name}: ${actual}` });
     } else {
       emit('log', { line: `SHA256 ${asset.name}: ${actual} (no expected checksum configured)` });
+    }
+    if (progressOptions) {
+      emitPhaseProgress(progressOptions, 100, `Downloaded ${asset.name}`);
     }
     return destination;
   } catch (error) {
@@ -313,10 +323,10 @@ async function cleanupTempDownload(writer, tempDestination) {
   }
 }
 
-async function prepareFile(kind, source, localPath) {
+async function prepareFile(kind, source, localPath, progressOptions) {
   if (source === 'online') {
     const asset = await resolveOnlineAsset(kind);
-    return downloadAndVerify(asset);
+    return downloadAndVerify(asset, progressOptions);
   }
   validateLocalPathSelection(kind, localPath, appState.allowedLocalPaths);
   if (!shouldHashLocalFile({ simulation: appState.simulation })) {
@@ -362,11 +372,32 @@ function logMaskromAfterSuccessfulLoader() {
   });
 }
 
-function emitPhaseProgress(progressOptions, percent) {
+function emitPhaseProgress(progressOptions, percent, label = progressOptions.progressLabel) {
   const value = Math.max(0, Math.min(100, Math.round(
     progressOptions.progressOffset + (percent * progressOptions.progressScale)
   )));
-  emit('progress', { label: progressOptions.progressLabel, value });
+  emit('progress', { label, value });
+}
+
+function progressSubrange(progressOptions, startPercent, endPercent, label = progressOptions.progressLabel) {
+  return {
+    progressLabel: label,
+    progressOffset: progressOptions.progressOffset + (startPercent * progressOptions.progressScale),
+    progressScale: ((endPercent - startPercent) / 100) * progressOptions.progressScale
+  };
+}
+
+function splitProgressForSource(progressOptions, source) {
+  if (source === 'online') {
+    return {
+      prepare: progressSubrange(progressOptions, 0, 50),
+      flash: progressSubrange(progressOptions, 50, 100)
+    };
+  }
+  return {
+    prepare: null,
+    flash: progressOptions
+  };
 }
 
 async function runUpdate(options) {
@@ -391,12 +422,14 @@ async function runUpdate(options) {
       emitPhaseProgress(progressOptions, 0);
 
       if (kind === 'loader') {
+        const loaderProgress = splitProgressForSource(progressOptions, options.loaderSource);
         const loaderPath = await prepareLoader({
           source: options.loaderSource,
           path: options.loaderPath,
-          loaderChoiceId: options.loaderChoiceId
+          loaderChoiceId: options.loaderChoiceId,
+          progressOptions: loaderProgress.prepare
         });
-        await writeLoader(loaderPath, progressOptions);
+        await writeLoader(loaderPath, loaderProgress.flash);
         emitPhaseProgress(progressOptions, 100);
         loaderLoadedThisRun = true;
       }
@@ -409,12 +442,14 @@ async function runUpdate(options) {
           } else {
             emit('log', { line: 'Device is in Maskrom mode; loading the configured Maskrom loader before writing the image.' });
             const loader = implicitLoaderOptions(options);
-            const loaderPath = await prepareLoader(loader);
-            await writeLoader(loaderPath, {
+            const prerequisiteProgress = {
               progressLabel: 'Maskrom loader prerequisite',
-              progressOffset: 0,
+              progressOffset: progressOptions.progressOffset,
               progressScale: 0
-            }, 'Loading Maskrom loader before image...');
+            };
+            loader.progressOptions = prerequisiteProgress;
+            const loaderPath = await prepareLoader(loader);
+            await writeLoader(loaderPath, prerequisiteProgress, 'Loading Maskrom loader before image...');
             loaderLoadedThisRun = true;
 
             device = await ensureDeviceBeforeFlash('image');
@@ -424,12 +459,13 @@ async function runUpdate(options) {
           }
         }
 
-        const imagePath = await prepareFile('image', options.imageSource, options.imagePath);
+        const imageProgress = splitProgressForSource(progressOptions, options.imageSource);
+        const imagePath = await prepareFile('image', options.imageSource, options.imagePath, imageProgress.prepare);
         emit('status', { message: 'Writing image...' });
         appState.flashBusy = true;
         emit('flash-busy', { value: true });
         try {
-          await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
+          await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], imageProgress.flash);
         } finally {
           appState.flashBusy = false;
           emit('flash-busy', { value: false });

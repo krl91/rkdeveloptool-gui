@@ -108,7 +108,7 @@ test('reboot stays available during downloads and is blocked only while flashing
   assert.match(main, /flashBusy:\s*false/);
   assert.match(main, /rebooting:\s*false/);
   assert.match(main, /emit\('flash-busy', \{ value: true \}\);[\s\S]*await runTool\(\['db', loaderPath\]/);
-  assert.match(main, /await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], progressOptions\);[\s\S]*emit\('flash-busy', \{ value: false \}\);/);
+  assert.match(main, /await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], imageProgress\.flash\);[\s\S]*emit\('flash-busy', \{ value: false \}\);/);
   assert.match(rebootHandler, /if \(appState\.flashBusy\) \{[\s\S]*Cannot reboot while a flash command is running\./);
   assert.doesNotMatch(rebootHandler, /if \(appState\.busy\)/);
   assert.doesNotMatch(rebootHandler, /emit\('busy'/);
@@ -129,13 +129,21 @@ test('main process loads a loader prerequisite before image writes from Maskrom'
 });
 
 test('main process assigns one progress range per selected flash step', () => {
-  assert.match(main, /function emitPhaseProgress\(progressOptions, percent\)/);
+  assert.match(main, /function emitPhaseProgress\(progressOptions, percent, label = progressOptions\.progressLabel\)/);
   assert.match(main, /progressOptions\.progressOffset \+ \(percent \* progressOptions\.progressScale\)/);
+  assert.match(main, /function progressSubrange\(progressOptions, startPercent, endPercent/);
+  assert.match(main, /progressOffset:\s*progressOptions\.progressOffset \+ \(startPercent \* progressOptions\.progressScale\)/);
+  assert.match(main, /progressScale:\s*\(\(endPercent - startPercent\) \/ 100\) \* progressOptions\.progressScale/);
+  assert.match(main, /function splitProgressForSource\(progressOptions, source\)/);
+  assert.match(main, /prepare:\s*progressSubrange\(progressOptions, 0, 50\)/);
+  assert.match(main, /flash:\s*progressSubrange\(progressOptions, 50, 100\)/);
   assert.match(main, /progressOffset:\s*\(index \/ plan\.length\) \* 100/);
   assert.match(main, /progressScale:\s*1 \/ plan\.length/);
   assert.match(main, /emitPhaseProgress\(progressOptions, 0\);/);
-  assert.match(main, /await writeLoader\(loaderPath, progressOptions\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
-  assert.match(main, /await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], progressOptions\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
+  assert.match(main, /const loaderProgress = splitProgressForSource\(progressOptions, options\.loaderSource\);[\s\S]*progressOptions: loaderProgress\.prepare[\s\S]*await writeLoader\(loaderPath, loaderProgress\.flash\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
+  assert.match(main, /const imageProgress = splitProgressForSource\(progressOptions, options\.imageSource\);[\s\S]*prepareFile\('image', options\.imageSource, options\.imagePath, imageProgress\.prepare\)[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], imageProgress\.flash\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
+  assert.match(main, /downloadAndVerify\(asset, progressOptions\)/);
+  assert.match(main, /emitPhaseProgress\(progressOptions, Math\.floor\(\(received \/ total\) \* 100\), `Downloading \$\{asset\.name\}`\)/);
 });
 
 test('custom configuration banner is present and hidden by default', () => {
