@@ -23,6 +23,7 @@ elements.configBanner = document.getElementById('configBanner');
 elements.configBannerText = document.getElementById('configBannerText');
 
 let busy = false;
+let flashBusy = false;
 let rebootAvailable = false;
 let rebootInFlight = false;
 
@@ -36,7 +37,7 @@ function selectedRadio(name) {
 }
 
 function updateRebootButton() {
-  elements.rebootButton.disabled = busy || rebootInFlight || !rebootAvailable;
+  elements.rebootButton.disabled = flashBusy || rebootInFlight || !rebootAvailable;
 }
 
 function setBusy(value) {
@@ -46,6 +47,11 @@ function setBusy(value) {
   }
   updateRebootButton();
   updateSourceControls();
+}
+
+function setFlashBusy(value) {
+  flashBusy = value;
+  updateRebootButton();
 }
 
 function updateSourceControls() {
@@ -142,7 +148,6 @@ async function performReboot({ confirmFirst = false } = {}) {
       try {
         setStatus('Rebooting...');
         await window.rkGui.reboot();
-        rebootAvailable = false;
         setStatus('Rebooted', 'ok');
         await window.rkGui.showRebootSuccess();
         return;
@@ -170,8 +175,11 @@ window.rkGui.onEvent((event) => {
   if (event.type === 'status') setStatus(event.message);
   if (event.type === 'progress') setProgress(event.label, event.value);
   if (event.type === 'busy') setBusy(event.value);
+  if (event.type === 'flash-busy') setFlashBusy(event.value);
   if (event.type === 'device') {
     updateDeviceLine(event.device);
+    rebootAvailable = true;
+    updateRebootButton();
     if (event.simulation) {
       setStatus('Simulation');
     }
@@ -221,6 +229,8 @@ window.addEventListener('DOMContentLoaded', async () => {
   const state = await window.rkGui.getInitialState();
   const device = state.device;
   updateDeviceLine(device);
+  rebootAvailable = true;
+  updateRebootButton();
   if (state.simulation) {
     setStatus('Simulation');
   }

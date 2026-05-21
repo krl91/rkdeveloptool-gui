@@ -95,6 +95,31 @@ test('main process checks the USB device immediately before each flash command',
   assert.match(renderer, /if \(event\.type === 'device'\)[\s\S]*updateDeviceLine\(event\.device\);/);
 });
 
+test('reboot stays available during downloads and is blocked only while flashing', () => {
+  const rebootHandler = main.slice(
+    main.indexOf("ipcMain.handle('app:reboot'"),
+    main.indexOf("ipcMain.handle('app:forceClose'")
+  );
+  const performRebootBlock = renderer.slice(
+    renderer.indexOf('async function performReboot'),
+    renderer.indexOf('window.rkGui.onEvent')
+  );
+
+  assert.match(main, /flashBusy:\s*false/);
+  assert.match(main, /rebooting:\s*false/);
+  assert.match(main, /emit\('flash-busy', \{ value: true \}\);[\s\S]*await runTool\(\['db', loaderPath\]/);
+  assert.match(main, /await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], progressOptions\);[\s\S]*emit\('flash-busy', \{ value: false \}\);/);
+  assert.match(rebootHandler, /if \(appState\.flashBusy\) \{[\s\S]*Cannot reboot while a flash command is running\./);
+  assert.doesNotMatch(rebootHandler, /if \(appState\.busy\)/);
+  assert.doesNotMatch(rebootHandler, /emit\('busy'/);
+  assert.match(renderer, /let flashBusy = false;/);
+  assert.match(renderer, /elements\.rebootButton\.disabled = flashBusy \|\| rebootInFlight \|\| !rebootAvailable;/);
+  assert.match(renderer, /function setFlashBusy\(value\) \{[\s\S]*updateRebootButton\(\);[\s\S]*\}/);
+  assert.match(renderer, /if \(event\.type === 'flash-busy'\) setFlashBusy\(event\.value\);/);
+  assert.match(renderer, /const state = await window\.rkGui\.getInitialState\(\);[\s\S]*rebootAvailable = true;[\s\S]*updateRebootButton\(\);/);
+  assert.doesNotMatch(performRebootBlock, /rebootAvailable = false;/);
+});
+
 test('main process loads a loader prerequisite before image writes from Maskrom', () => {
   assert.match(main, /deviceNeedsLoaderBeforeImage\(device\)/);
   assert.match(main, /Device is in Maskrom mode; loading the configured Maskrom loader before writing the image\./);
@@ -138,10 +163,15 @@ test('renderer protects reboot against duplicate clicks', () => {
 });
 
 test('renderer waits for final completed UI before proposing reboot', () => {
+  const doneHandler = renderer.slice(
+    renderer.indexOf("if (event.type === 'done')"),
+    renderer.indexOf("for (const input")
+  );
+
   assert.match(renderer, /function waitForUiPaint\(\)/);
   assert.match(renderer, /await window\.rkGui\.startUpdate\(options\);[\s\S]*setProgress\('Done', 100\);[\s\S]*setStatus\('Done', 'ok'\);[\s\S]*rebootAvailable = true;[\s\S]*await waitForUiPaint\(\);[\s\S]*await performReboot\(\{ confirmFirst: true \}\);/);
-  assert.match(renderer, /if \(event\.type === 'done'\) \{[\s\S]*setProgress\('Done', 100\);[\s\S]*\}/);
-  assert.doesNotMatch(renderer, /if \(event\.type === 'done'\) \{[\s\S]*rebootAvailable = true;[\s\S]*\}/);
+  assert.match(doneHandler, /setProgress\('Done', 100\);/);
+  assert.doesNotMatch(doneHandler, /rebootAvailable = true;/);
 });
 
 test('main process explains reboot success and failed reboot choices', () => {

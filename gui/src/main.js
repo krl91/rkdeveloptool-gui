@@ -51,6 +51,8 @@ let appState = {
   rkdeveloptoolSearchPaths: [],
   simulation: false,
   busy: false,
+  flashBusy: false,
+  rebooting: false,
   allowedLocalPaths: new Set(),
   windowlessTransition: false
 };
@@ -344,7 +346,14 @@ async function prepareLoader(options) {
 async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskrom loader...') {
   await ensureDeviceBeforeFlash('loader');
   emit('status', { message });
-  await runTool(['db', loaderPath], progressOptions);
+  appState.flashBusy = true;
+  emit('flash-busy', { value: true });
+  try {
+    await runTool(['db', loaderPath], progressOptions);
+  } finally {
+    appState.flashBusy = false;
+    emit('flash-busy', { value: false });
+  }
 }
 
 function logMaskromAfterSuccessfulLoader() {
@@ -417,7 +426,14 @@ async function runUpdate(options) {
 
         const imagePath = await prepareFile('image', options.imageSource, options.imagePath);
         emit('status', { message: 'Writing image...' });
-        await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
+        appState.flashBusy = true;
+        emit('flash-busy', { value: true });
+        try {
+          await runTool(['wl', String(appState.config.image.lba ?? 0), imagePath], progressOptions);
+        } finally {
+          appState.flashBusy = false;
+          emit('flash-busy', { value: false });
+        }
         emitPhaseProgress(progressOptions, 100);
       }
     }
@@ -716,18 +732,19 @@ ipcMain.handle('app:confirmRebootFailure', async (_event, message) => {
 });
 
 ipcMain.handle('app:reboot', async () => {
-  if (appState.busy) {
-    throw new Error('Cannot reboot while an update is running.');
+  if (appState.flashBusy) {
+    throw new Error('Cannot reboot while a flash command is running.');
   }
-  appState.busy = true;
-  emit('busy', { value: true });
+  if (appState.rebooting) {
+    throw new Error('A reboot command is already running.');
+  }
+  appState.rebooting = true;
   try {
     await runTool(['rd']);
-    emit('done', { message: 'Reboot command sent.' });
+    emit('log', { line: 'Reboot command sent.' });
     return { ok: true };
   } finally {
-    appState.busy = false;
-    emit('busy', { value: false });
+    appState.rebooting = false;
   }
 });
 
