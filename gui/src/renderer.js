@@ -75,6 +75,15 @@ function setProgress(label, value) {
   elements.progressBar.value = normalized;
 }
 
+function waitForUiPaint() {
+  return new Promise((resolve) => {
+    const raf = typeof window.requestAnimationFrame === 'function'
+      ? window.requestAnimationFrame.bind(window)
+      : (callback) => window.setTimeout(callback, 0);
+    raf(() => raf(resolve));
+  });
+}
+
 function collectOptions() {
   return {
     updateLoader: elements.updateLoader.checked,
@@ -107,9 +116,11 @@ async function runUpdate(options) {
   setProgress('Preparing', 0);
   try {
     await window.rkGui.startUpdate(options);
+    setProgress('Done', 100);
     setStatus('Done', 'ok');
     rebootAvailable = true;
     updateRebootButton();
+    await waitForUiPaint();
     await performReboot({ confirmFirst: true });
   } catch (error) {
     setStatus('Error', 'error');
@@ -168,8 +179,7 @@ window.rkGui.onEvent((event) => {
   if (event.type === 'done') {
     appendLog(event.message);
     setStatus('Done', 'ok');
-    rebootAvailable = true;
-    updateRebootButton();
+    setProgress('Done', 100);
   }
 });
 

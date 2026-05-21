@@ -127,6 +127,13 @@ test('renderer protects reboot against duplicate clicks', () => {
   assert.match(renderer, /await performReboot\(\{ confirmFirst: true \}\);/);
 });
 
+test('renderer waits for final completed UI before proposing reboot', () => {
+  assert.match(renderer, /function waitForUiPaint\(\)/);
+  assert.match(renderer, /await window\.rkGui\.startUpdate\(options\);[\s\S]*setProgress\('Done', 100\);[\s\S]*setStatus\('Done', 'ok'\);[\s\S]*rebootAvailable = true;[\s\S]*await waitForUiPaint\(\);[\s\S]*await performReboot\(\{ confirmFirst: true \}\);/);
+  assert.match(renderer, /if \(event\.type === 'done'\) \{[\s\S]*setProgress\('Done', 100\);[\s\S]*\}/);
+  assert.doesNotMatch(renderer, /if \(event\.type === 'done'\) \{[\s\S]*rebootAvailable = true;[\s\S]*\}/);
+});
+
 test('main process explains reboot success and failed reboot choices', () => {
   assert.match(main, /ipcMain\.handle\('app:showRebootSuccess'/);
   assert.match(main, /You can disconnect the USB-C cable after the device has rebooted correctly\./);
