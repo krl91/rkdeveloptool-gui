@@ -265,6 +265,49 @@ Default network timeouts are deliberately long:
 }
 ```
 
+### Configuration Reference
+
+The **Parameters** tab edits the same JSON structure as
+`rkdeveloptool-gui.config.json`. The table below documents every supported
+default parameter.
+
+| Parameter | Type | Unit | Description |
+| --- | --- | --- | --- |
+| `rkdeveloptoolPath` | string | File path | Optional explicit path to `rkdeveloptool` or `rkdeveloptool.exe`. Leave empty to let the application search packaged resources, the development bundle, the repository root, then `PATH`. |
+| `commandPrefix` | string array | Command arguments | Optional privilege wrapper placed before `rkdeveloptool`. Supported wrappers are `sudo`, `pkexec`, and `doas`; only safe non-interactive arguments such as `-n` are accepted where supported. The default empty array runs `rkdeveloptool` directly. |
+| `releasePageUrl` | string | URL | Human-readable firmware release page. It is used as a fallback source for the GitHub API URL and is shown in diagnostics. |
+| `releaseApiUrl` | string | URL | GitHub release API endpoint used to find online firmware assets and their SHA256 metadata. |
+| `documentationUrl` | string | URL | Online guide opened by the **User guide** link in the application. |
+| `rkdeveloptoolCommandDelayMs` | number | Milliseconds | Delay inserted between consecutive `rkdeveloptool` commands such as `ld`, `db`, `wl`, and `rd`. The default is `2000` ms to let the USB device settle. |
+| `network.metadataTimeoutMs` | number | Milliseconds | Timeout for firmware release metadata and checksum text requests. Default: `300000` ms. |
+| `network.downloadTimeoutMs` | number | Milliseconds | Timeout for firmware loader/image downloads. Default: `7200000` ms. Large images can take a long time on slow links. |
+| `autoUpdate.enabled` | boolean | none | Enables or disables application self-update support. Set to `false` to disable update checks and update installation. |
+| `autoUpdate.checkOnStartup` | boolean | none | When `true`, the application checks for a newer RK Firmware Updater release during startup. The check is skipped if the operating system reports that the computer is offline. |
+| `autoUpdate.releaseApiUrl` | string | URL | GitHub API endpoint used to find new RK Firmware Updater releases. This is separate from the firmware release API. |
+| `autoUpdate.metadataTimeoutMs` | number | Milliseconds | Timeout for the application update metadata request. Default: `300000` ms. |
+| `autoUpdate.downloadTimeoutMs` | number | Milliseconds | Timeout for downloading an application update installer/package. Default: `7200000` ms. |
+| `autoUpdate.installTimeoutMs` | number | Milliseconds | Timeout for running the downloaded application update installer. Default: `1800000` ms. |
+| `autoUpdate.linuxPackage` | string | Package type | Linux update package preference. Supported values are `deb`, `rpm`, and `appimage`; default is `deb`. |
+| `loader.assetName` | string | File name | Default online Maskrom loader file name. Used when no specific `loader.choices` entry is selected. |
+| `loader.url` | string | URL | Default direct download URL for the Maskrom loader. |
+| `loader.choices` | array | Loader list | List of online Maskrom loader choices displayed in the **Maskrom loader type** dropdown. |
+| `loader.choices[].id` | string | Identifier | Stable internal identifier for a loader choice. It should be unique within `loader.choices`. |
+| `loader.choices[].label` | string | Display text | User-facing loader name shown in the dropdown and confirmation dialog. |
+| `loader.choices[].assetName` | string | File name | File name used for the downloaded loader choice and cache entry. |
+| `loader.choices[].url` | string | URL | Direct download URL for this loader choice. |
+| `image.assetName` | string | File name | Online image file name expected in the firmware release. |
+| `image.url` | string | URL | Direct download URL for the complete OpenIPC image. |
+| `image.lba` | number | LBA sector offset | Start address passed to `rkdeveloptool wl`. The default is `0` for complete `*_sdcard.img` images. |
+
+Notes:
+
+- The Maskrom loader used by `rkdeveloptool db` must be a Rockchip/Radxa SPL
+  loader. OpenIPC `*_u-boot.bin` files are not valid Maskrom loaders.
+- The application validates JSON before applying it. If validation fails, the
+  previous active configuration remains in use.
+- Use **Reset** in the **Parameters** tab to restore the packaged defaults after
+  an unsafe or broken edit.
+
 If a custom configuration file is loaded, the main window shows a warning
 banner and the confirmation dialog lists the active source hosts before the
 update starts.

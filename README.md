@@ -331,6 +331,11 @@ active JSON configuration and provides these actions:
 - **Apply** to validate, save, and immediately use the edited configuration.
 - **Reset** to restore the packaged default configuration after confirmation.
 
+For every JSON parameter, including its type, unit, and purpose, see the
+configuration reference in:
+
+	docs/USER_GUIDE.md
+
 
 USB Notes
 ---------

@@ -117,6 +117,9 @@ operating system reports that the computer is offline. Application update
 downloads use `autoUpdate.downloadTimeoutMs`, and installer execution uses
 `autoUpdate.installTimeoutMs`.
 
+For a complete list of JSON parameters with type, unit, and behavior, see
+`../docs/USER_GUIDE.md`.
+
 When a custom configuration file is loaded, the renderer shows a persistent
 warning banner. The confirmation dialog also lists the release, Maskrom loader,
 and image source hosts before the update starts.
