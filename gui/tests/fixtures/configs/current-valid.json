@@ -6,19 +6,6 @@
   "releaseApiUrl": "https://api.github.com/repos/OpenIPC/sbc-groundstations/releases/tags/buildroot-snapshot",
   "documentationUrl": "https://github.com/krl91/rkdeveloptool-gui/blob/main/docs/USER_GUIDE.md",
   "rkdeveloptoolCommandDelayMs": 2000,
-  "network": {
-    "metadataTimeoutMs": 300000,
-    "downloadTimeoutMs": 7200000
-  },
-  "autoUpdate": {
-    "enabled": true,
-    "checkOnStartup": true,
-    "releaseApiUrl": "https://api.github.com/repos/krl91/rkdeveloptool-gui/releases/latest",
-    "metadataTimeoutMs": 300000,
-    "downloadTimeoutMs": 7200000,
-    "installTimeoutMs": 1800000,
-    "linuxPackage": "deb"
-  },
   "loader": {
     "assetName": "rk356x_spl_loader_ddr1056_v1.10.111.bin",
     "url": "https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin",
@@ -28,12 +15,6 @@
         "label": "Radxa RK356x SPL v1.10.111",
         "assetName": "rk356x_spl_loader_ddr1056_v1.10.111.bin",
         "url": "https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin"
-      },
-      {
-        "id": "rk356x-v1.12.109-no-check-todly",
-        "label": "Radxa RK356x SPL v1.12.109 no-check",
-        "assetName": "rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin",
-        "url": "https://dl.radxa.com/rock3/images/loader/rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin"
       }
     ]
   },

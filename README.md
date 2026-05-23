@@ -301,13 +301,17 @@ directory, in the Electron user data directory, or by setting:
 
 	RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 
-The firmware release page URL, GitHub API URL, Maskrom loader URL, Maskrom
-loader choices, image URL, asset names, image LBA, online user guide URL, application
+The configuration release version, firmware release page URL, GitHub API URL,
+Maskrom loader URL, Maskrom loader choices, image URL, image choices, asset names,
+image LBA, online user guide URL, application
 self-update settings, network timeouts, and the delay between consecutive
 `rkdeveloptool` commands are configurable. Online GitHub release assets and
 application update downloads are verified with SHA256 before use. Direct
-Maskrom loader URLs without a published expected checksum are downloaded with
-their calculated SHA256 logged for traceability.
+Maskrom loader and image choice URLs without a published expected checksum are
+downloaded with their calculated SHA256 logged for traceability.
+
+Imported parameter files from older releases are converted to the current
+configuration format before they are shown in the editor.
 
 Default network timeout values are intentionally large:
 

@@ -1,0 +1,13 @@
+{
+  "rkdeveloptoolPath": "",
+  "commandPrefix": [],
+  "loader": {
+    "assetName": "rk356x_spl_loader_ddr1056_v1.10.111.bin",
+    "url": "https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin"
+  },
+  "image": {
+    "assetName": "runcam_wifilink_sdcard.img",
+    "url": 42,
+    "lba": 0
+  }
+}

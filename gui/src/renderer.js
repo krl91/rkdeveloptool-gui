@@ -11,6 +11,7 @@ const elements = {
   updateLoader: document.getElementById('updateLoader'),
   updateImage: document.getElementById('updateImage'),
   loaderChoice: document.getElementById('loaderChoice'),
+  imageChoice: document.getElementById('imageChoice'),
   loaderPath: document.getElementById('loaderPath'),
   imagePath: document.getElementById('imagePath'),
   chooseLoader: document.getElementById('chooseLoader'),
@@ -103,6 +104,7 @@ function updateSourceControls() {
   const loaderLocal = selectedRadio('loaderSource') === 'local';
   const imageLocal = selectedRadio('imageSource') === 'local';
   elements.loaderChoice.disabled = busy || loaderLocal;
+  elements.imageChoice.disabled = busy || imageLocal;
   elements.chooseLoader.disabled = busy || !loaderLocal;
   elements.loaderPath.disabled = !loaderLocal;
   elements.chooseImage.disabled = busy || !imageLocal;
@@ -113,6 +115,7 @@ function updateSourceControls() {
 function renderConfigurationState(state) {
   currentPublicConfig = state.config;
   const selectedLoaderChoice = elements.loaderChoice.value;
+  const selectedImageChoice = elements.imageChoice.value;
   elements.loaderChoice.textContent = '';
   for (const choice of state.config.loader.choices || []) {
     const option = document.createElement('option');
@@ -125,8 +128,23 @@ function renderConfigurationState(state) {
     elements.loaderChoice.value = selectedLoaderChoice;
   }
 
+  elements.imageChoice.textContent = '';
+  for (const choice of state.config.image.choices || []) {
+    const option = document.createElement('option');
+    option.value = choice.id;
+    option.textContent = choice.label;
+    option.dataset.url = choice.url;
+    elements.imageChoice.appendChild(option);
+  }
+  const configuredImageOption = [...elements.imageChoice.options].find((option) => option.dataset.url === state.config.image.url);
+  if (selectedImageChoice && [...elements.imageChoice.options].some((option) => option.value === selectedImageChoice)) {
+    elements.imageChoice.value = selectedImageChoice;
+  } else if (configuredImageOption) {
+    elements.imageChoice.value = configuredImageOption.value;
+  }
+
   elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || state.config.loader.url;
-  elements.imageUrl.textContent = state.config.image.url;
+  elements.imageUrl.textContent = elements.imageChoice.selectedOptions[0]?.dataset.url || state.config.image.url;
   elements.parameterReleaseApi.textContent = state.configInfo?.source?.releaseApiHost || 'Not configured';
   elements.parameterLoaderSource.textContent = state.configInfo?.source?.loaderHost || 'Not configured';
   elements.parameterImageSource.textContent = state.configInfo?.source?.imageHost || 'Not configured';
@@ -243,6 +261,8 @@ function collectOptions() {
     imageSource: selectedRadio('imageSource'),
     loaderChoiceId: elements.loaderChoice.value,
     loaderChoiceLabel: elements.loaderChoice.selectedOptions[0]?.textContent || '',
+    imageChoiceId: elements.imageChoice.value,
+    imageChoiceLabel: elements.imageChoice.selectedOptions[0]?.textContent || '',
     loaderPath: elements.loaderPath.value,
     imagePath: elements.imagePath.value
   };
@@ -427,6 +447,9 @@ elements.loadConfigButton.addEventListener('click', async () => {
     if (result.canceled) return;
     elements.configEditor.value = result.json;
     setStatus('Configuration loaded');
+    if (result.migration) {
+      appendLog(`Configuration converted from release version ${result.migration.fromReleaseVersion} to ${result.migration.toReleaseVersion}.`);
+    }
     appendLog(`Configuration loaded from ${result.filePath}. Click Apply to save and use it.`);
   } catch (error) {
     setStatus('Error', 'error');
@@ -464,6 +487,9 @@ elements.applyConfigButton.addEventListener('click', async () => {
   try {
     const result = await window.rkGui.applyConfig(elements.configEditor.value);
     elements.configEditor.value = result.json;
+    if (result.migration) {
+      appendLog(`Configuration converted from release version ${result.migration.fromReleaseVersion} to ${result.migration.toReleaseVersion}.`);
+    }
     renderConfigurationState(result);
     setStatus('Configuration applied', 'ok');
     appendLog(`Configuration applied and saved to ${result.filePath}.`);
@@ -490,6 +516,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   elements.loaderChoice.addEventListener('change', () => {
     elements.loaderUrl.textContent = elements.loaderChoice.selectedOptions[0]?.dataset.url || currentPublicConfig?.loader?.url || '';
+  });
+  elements.imageChoice.addEventListener('change', () => {
+    elements.imageUrl.textContent = elements.imageChoice.selectedOptions[0]?.dataset.url || currentPublicConfig?.image?.url || '';
   });
   renderConfigurationState(state);
   elements.configEditor.value = await window.rkGui.getConfigJson();

@@ -6,6 +6,7 @@ const test = require('node:test');
 
 const {
   commandParts,
+  CURRENT_CONFIG_RELEASE_VERSION,
   deepMerge,
   describeUpdatePlan,
   digestFromAsset,
@@ -31,6 +32,7 @@ const {
   plannedUpdateKinds,
   progressFromLine,
   mappedPhaseProgress,
+  migrateConfig,
   publicConfig,
   readJson,
   resolveSha256FromRelease,
@@ -38,12 +40,14 @@ const {
   splitProgressForSource,
   sourceSummary,
   validateCommandPrefix,
+  validateConfigShape,
   validateLocalPathSelection,
   sha256File
 } = require('../src/lib');
 
 const SHA_A = 'a'.repeat(64);
 const SHA_B = 'b'.repeat(64);
+const CONFIG_FIXTURES = path.join(__dirname, 'fixtures', 'configs');
 
 test('deepMerge merges nested objects without mutating the base config', () => {
   const base = {
@@ -63,6 +67,79 @@ test('deepMerge merges nested objects without mutating the base config', () => {
   });
   assert.equal(base.loader.url, 'old');
   assert.deepEqual(base.commandPrefix, ['sudo']);
+});
+
+test('migrateConfig adds release version and image choices to legacy parameters', () => {
+  const defaults = {
+    releaseVersion: CURRENT_CONFIG_RELEASE_VERSION,
+    loader: {
+      assetName: 'loader.bin',
+      url: 'https://default.example/loader.bin'
+    },
+    image: {
+      assetName: 'runcam_wifilink_sdcard.img',
+      url: 'https://default.example/runcam_wifilink_sdcard.img',
+      choices: [
+        {
+          id: 'default-image',
+          label: 'Default image',
+          assetName: 'runcam_wifilink_sdcard.img',
+          url: 'https://default.example/runcam_wifilink_sdcard.img'
+        }
+      ],
+      lba: 0
+    }
+  };
+  const legacy = {
+    loader: {
+      assetName: 'loader.bin',
+      url: 'https://legacy.example/loader.bin'
+    },
+    image: {
+      url: 'https://legacy.example/runcam_wifilink_sdcard.img',
+      lba: 0
+    }
+  };
+
+  const { config, migration } = migrateConfig(legacy, defaults);
+
+  assert.equal(config.releaseVersion, CURRENT_CONFIG_RELEASE_VERSION);
+  assert.equal(config.image.url, 'https://legacy.example/runcam_wifilink_sdcard.img');
+  assert.deepEqual(config.image.choices, defaults.image.choices);
+  assert.equal(migration.fromReleaseVersion, 'legacy');
+  assert.equal(migration.toReleaseVersion, CURRENT_CONFIG_RELEASE_VERSION);
+  assert.ok(migration.changes.includes('releaseVersion'));
+  assert.ok(migration.changes.includes('image.choices'));
+});
+
+test('parameter fixtures cover legacy and current config compatibility', () => {
+  const defaults = readJson(path.join(__dirname, '..', 'config', 'default.json'));
+  const legacyValid = readJson(path.join(CONFIG_FIXTURES, 'legacy-valid.json'));
+  const currentValid = readJson(path.join(CONFIG_FIXTURES, 'current-valid.json'));
+  const legacyInvalid = readJson(path.join(CONFIG_FIXTURES, 'legacy-invalid.json'));
+  const currentInvalid = readJson(path.join(CONFIG_FIXTURES, 'current-invalid.json'));
+
+  const legacyMigration = migrateConfig(legacyValid, defaults);
+  assert.equal(legacyMigration.config.releaseVersion, CURRENT_CONFIG_RELEASE_VERSION);
+  assert.equal(legacyMigration.config.image.url, legacyValid.image.url);
+  assert.equal(legacyMigration.config.image.choices.length, defaults.image.choices.length);
+  assert.equal(legacyMigration.migration.fromReleaseVersion, 'legacy');
+  assert.ok(legacyMigration.migration.changes.includes('image.choices'));
+
+  const currentMigration = migrateConfig(currentValid, defaults);
+  assert.equal(currentMigration.config.releaseVersion, CURRENT_CONFIG_RELEASE_VERSION);
+  assert.equal(currentMigration.config.image.choices.length, 2);
+  assert.equal(currentMigration.migration, null);
+  assert.doesNotThrow(() => validateConfigShape(currentMigration.config));
+
+  assert.throws(
+    () => migrateConfig(legacyInvalid, defaults),
+    /Invalid image\.url/
+  );
+  assert.throws(
+    () => migrateConfig(currentInvalid, defaults),
+    /Invalid image\.choices\[0\]\.url/
+  );
 });
 
 test('loadConfigFiles applies overrides in declaration order', () => {
@@ -346,6 +423,8 @@ test('normalizeUpdateOptions validates renderer-provided update options', () => 
     imageSource: 'online',
     loaderChoiceId: '',
     loaderChoiceLabel: '',
+    imageChoiceId: '',
+    imageChoiceLabel: '',
     loaderPath: '/tmp/loader.bin',
     imagePath: ''
   });
@@ -377,10 +456,11 @@ test('describeUpdatePlan explains exactly what will happen before flashing', () 
     updateImage: true,
     loaderSource: 'online',
     loaderChoiceLabel: 'Radxa RK356x SPL v1.10.111',
-    imageSource: 'local'
+    imageSource: 'online',
+    imageChoiceLabel: 'RunCam WiFiLink GS menu fix 2026-05-23'
   }), [
     '1. Load the Maskrom loader from the latest online file (Radxa RK356x SPL v1.10.111)',
-    '2. Write the image from the local file'
+    '2. Write the image from the latest online file (RunCam WiFiLink GS menu fix 2026-05-23)'
   ]);
 });
 
@@ -417,7 +497,20 @@ test('publicConfig only exposes renderer-visible values', () => {
         }
       ]
     },
-    image: { url: 'https://image.example/file.img', assetName: 'image.img', lba: 0 }
+    image: {
+      url: 'https://image.example/file.img',
+      assetName: 'image.img',
+      choices: [
+        {
+          id: 'image-a',
+          label: 'Image A',
+          assetName: 'image-a.img',
+          url: 'https://image.example/image-a.img',
+          sha256: SHA_B
+        }
+      ],
+      lba: 0
+    }
   }), {
     documentationUrl: 'https://docs.example/guide',
     loader: {
@@ -431,7 +524,18 @@ test('publicConfig only exposes renderer-visible values', () => {
         }
       ]
     },
-    image: { url: 'https://image.example/file.img', lba: 0 }
+    image: {
+      url: 'https://image.example/file.img',
+      choices: [
+        {
+          id: 'image-a',
+          label: 'Image A',
+          assetName: 'image-a.img',
+          url: 'https://image.example/image-a.img'
+        }
+      ],
+      lba: 0
+    }
   });
 });
 
@@ -463,6 +567,7 @@ test('normalizeTimeoutMs keeps large configurable values and rejects invalid one
 
 test('default config keeps network timeouts configurable and large', () => {
   const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
+  assert.equal(config.releaseVersion, CURRENT_CONFIG_RELEASE_VERSION);
   assert.equal(config.network.metadataTimeoutMs, 300000);
   assert.equal(config.network.downloadTimeoutMs, 7200000);
   assert.equal(config.rkdeveloptoolCommandDelayMs, 2000);
@@ -479,6 +584,18 @@ test('default config offers Radxa RK356x loader choices and avoids u-boot as db 
     'rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin'
   ]);
   assert.equal(config.loader.choices.some((choice) => choice.assetName === 'runcam_wifilink_u-boot.bin'), false);
+});
+
+test('default config offers image choices with the GS menu fix first', () => {
+  const config = readJson(path.join(__dirname, '..', 'config', 'default.json'));
+
+  assert.equal(config.image.assetName, 'runcam_wifilink_sdcard.img');
+  assert.equal(config.image.url, 'https://github.com/krl91/sbc-groundstations/releases/download/runcam-wifilink-gsmenu-fix-2026-05-23/runcam_wifilink_sdcard.img');
+  assert.equal(config.image.choices.length, 2);
+  assert.deepEqual(config.image.choices.map((choice) => choice.id), [
+    'runcam-wifilink-gsmenu-fix-2026-05-23',
+    'openipc-buildroot-snapshot'
+  ]);
 });
 
 test('default documentation link resolves to the online user guide', { timeout: 20000 }, async () => {

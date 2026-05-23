@@ -1,0 +1,21 @@
+{
+  "releaseVersion": "0.1.7",
+  "rkdeveloptoolPath": "",
+  "commandPrefix": [],
+  "loader": {
+    "assetName": "rk356x_spl_loader_ddr1056_v1.10.111.bin",
+    "url": "https://dl.radxa.com/rock3/images/loader/rock-3a/rk356x_spl_loader_ddr1056_v1.10.111.bin"
+  },
+  "image": {
+    "assetName": "runcam_wifilink_sdcard.img",
+    "url": "https://github.com/krl91/sbc-groundstations/releases/download/runcam-wifilink-gsmenu-fix-2026-05-23/runcam_wifilink_sdcard.img",
+    "choices": [
+      {
+        "id": "runcam-wifilink-gsmenu-fix-2026-05-23",
+        "label": "RunCam WiFiLink GS menu fix 2026-05-23",
+        "assetName": "runcam_wifilink_sdcard.img"
+      }
+    ],
+    "lba": 0
+  }
+}

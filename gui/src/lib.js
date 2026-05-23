@@ -4,6 +4,7 @@ const path = require('node:path');
 
 const VALID_FILE_KINDS = new Set(['loader', 'image']);
 const VALID_SOURCES = new Set(['online', 'local']);
+const CURRENT_CONFIG_RELEASE_VERSION = '0.1.7';
 const ALLOWED_COMMAND_PREFIXES = {
   sudo: new Set(['-n']),
   pkexec: new Set(),
@@ -29,6 +30,103 @@ function deepMerge(base, override) {
 
 function readJson(filePath, fsModule = fs) {
   return JSON.parse(fsModule.readFileSync(filePath, 'utf8'));
+}
+
+function cloneConfig(config) {
+  return JSON.parse(JSON.stringify(config || {}));
+}
+
+function releaseVersion(config) {
+  return typeof config?.releaseVersion === 'string' && config.releaseVersion.trim()
+    ? config.releaseVersion.trim()
+    : '';
+}
+
+function validateFirmwareEndpointConfig(config, fieldName) {
+  const section = config?.[fieldName];
+  if (!section || typeof section !== 'object' || Array.isArray(section)) {
+    throw new Error(`Invalid ${fieldName} configuration: expected object.`);
+  }
+  if (typeof section.assetName !== 'string' || section.assetName.trim() === '') {
+    throw new Error(`Invalid ${fieldName}.assetName: expected non-empty string.`);
+  }
+  if (typeof section.url !== 'string' || section.url.trim() === '') {
+    throw new Error(`Invalid ${fieldName}.url: expected non-empty string.`);
+  }
+  if (section.choices !== undefined) {
+    if (!Array.isArray(section.choices)) {
+      throw new Error(`Invalid ${fieldName}.choices: expected array.`);
+    }
+    for (const [index, choice] of section.choices.entries()) {
+      if (!choice || typeof choice !== 'object' || Array.isArray(choice)) {
+        throw new Error(`Invalid ${fieldName}.choices[${index}]: expected object.`);
+      }
+      for (const choiceField of ['id', 'label', 'assetName', 'url']) {
+        if (typeof choice[choiceField] !== 'string' || choice[choiceField].trim() === '') {
+          throw new Error(`Invalid ${fieldName}.choices[${index}].${choiceField}: expected non-empty string.`);
+        }
+      }
+    }
+  }
+}
+
+function validateConfigShape(config) {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    throw new Error('Invalid configuration: expected object.');
+  }
+  if (config.releaseVersion !== undefined && typeof config.releaseVersion !== 'string') {
+    throw new Error('Invalid releaseVersion: expected string.');
+  }
+  validateFirmwareEndpointConfig(config, 'loader');
+  validateFirmwareEndpointConfig(config, 'image');
+  if (config.image.lba !== undefined && (!Number.isInteger(config.image.lba) || config.image.lba < 0)) {
+    throw new Error('Invalid image.lba: expected non-negative integer.');
+  }
+}
+
+function migrateConfig(config, defaultConfig = {}, currentVersion = CURRENT_CONFIG_RELEASE_VERSION) {
+  const migrated = cloneConfig(config);
+  const sourceVersion = releaseVersion(migrated) || 'legacy';
+  const changes = [];
+
+  if (releaseVersion(migrated) !== currentVersion) {
+    migrated.releaseVersion = currentVersion;
+    changes.push('releaseVersion');
+  }
+
+  if (!migrated.image || typeof migrated.image !== 'object' || Array.isArray(migrated.image)) {
+    migrated.image = {};
+    changes.push('image');
+  }
+
+  const defaultImage = defaultConfig?.image && typeof defaultConfig.image === 'object' && !Array.isArray(defaultConfig.image)
+    ? defaultConfig.image
+    : {};
+
+  for (const fieldName of ['assetName', 'url', 'lba']) {
+    if (migrated.image[fieldName] === undefined && defaultImage[fieldName] !== undefined) {
+      migrated.image[fieldName] = cloneConfig(defaultImage[fieldName]);
+      changes.push(`image.${fieldName}`);
+    }
+  }
+
+  if (!Array.isArray(migrated.image.choices) && Array.isArray(defaultImage.choices)) {
+    migrated.image.choices = cloneConfig(defaultImage.choices);
+    changes.push('image.choices');
+  }
+
+  validateConfigShape(migrated);
+
+  return {
+    config: migrated,
+    migration: changes.length > 0
+      ? {
+        fromReleaseVersion: sourceVersion,
+        toReleaseVersion: currentVersion,
+        changes
+      }
+      : null
+  };
 }
 
 function loadConfigFiles(defaultConfigPath, candidates, fsModule = fs) {
@@ -273,6 +371,8 @@ function normalizeUpdateOptions(options) {
     imageSource: normalizeSource(options.imageSource, 'imageSource'),
     loaderChoiceId: typeof options.loaderChoiceId === 'string' ? options.loaderChoiceId : '',
     loaderChoiceLabel: typeof options.loaderChoiceLabel === 'string' ? options.loaderChoiceLabel : '',
+    imageChoiceId: typeof options.imageChoiceId === 'string' ? options.imageChoiceId : '',
+    imageChoiceLabel: typeof options.imageChoiceLabel === 'string' ? options.imageChoiceLabel : '',
     loaderPath: typeof options.loaderPath === 'string' ? options.loaderPath : '',
     imagePath: typeof options.imagePath === 'string' ? options.imagePath : ''
   };
@@ -291,7 +391,10 @@ function describeUpdatePlan(options) {
         : '';
       return `1. Load the Maskrom loader from the ${source}${detail}`;
     }
-    return `${kinds.indexOf(kind) + 1}. Write the image from the ${source}`;
+    const detail = normalized.imageSource === 'online' && normalized.imageChoiceLabel
+      ? ` (${normalized.imageChoiceLabel})`
+      : '';
+    return `${kinds.indexOf(kind) + 1}. Write the image from the ${source}${detail}`;
   });
 }
 
@@ -361,6 +464,7 @@ function isSafeExternalUrl(url) {
 
 function publicConfig(config) {
   const loaderChoices = Array.isArray(config?.loader?.choices) ? config.loader.choices : [];
+  const imageChoices = Array.isArray(config?.image?.choices) ? config.image.choices : [];
   return {
     documentationUrl: config?.documentationUrl || '',
     loader: {
@@ -374,6 +478,12 @@ function publicConfig(config) {
     },
     image: {
       url: config?.image?.url || '',
+      choices: imageChoices.map((choice) => ({
+        id: choice.id || '',
+        label: choice.label || choice.assetName || choice.url || '',
+        assetName: choice.assetName || '',
+        url: choice.url || ''
+      })),
       lba: config?.image?.lba ?? 0
     }
   };
@@ -398,6 +508,7 @@ async function sha256File(filePath, fsModule = fs) {
 
 module.exports = {
   commandParts,
+  CURRENT_CONFIG_RELEASE_VERSION,
   deepMerge,
   describeUpdatePlan,
   digestFromAsset,
@@ -426,6 +537,7 @@ module.exports = {
   readJson,
   resolveSha256FromRelease,
   mappedPhaseProgress,
+  migrateConfig,
   shouldHashLocalFile,
   simulatedDevice,
   splitProgressForSource,
@@ -433,6 +545,7 @@ module.exports = {
   urlHost,
   isSafeExternalUrl,
   validateCommandPrefix,
+  validateConfigShape,
   validateLocalPathSelection,
   sha256File
 };

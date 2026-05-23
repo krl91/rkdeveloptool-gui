@@ -140,10 +140,15 @@ contains Radxa RK356x SPL loaders suitable for `rkdeveloptool db`, not the
 OpenIPC `u-boot.bin` file. Use **Manual** only when you already have a Rockchip
 loader file suitable for `rkdeveloptool db`.
 
-Online image files are verified with SHA256 before flashing. Local files are not
-matched against the online release checksum because they may be custom builds.
-Some direct loader URLs do not publish an expected checksum; in that case the
-application logs the calculated SHA256 for traceability.
+Online mode provides an image version list. The default image choice is the
+RunCam WiFiLink GS menu fix release; the OpenIPC buildroot snapshot remains
+available as a second choice.
+
+Online image files from release metadata are verified with SHA256 before
+flashing. Local files are not matched against the online release checksum
+because they may be custom builds. Some direct loader or image choice URLs do
+not publish an expected checksum; in that case the application logs the
+calculated SHA256 for traceability.
 
 The configured default URLs are visible in the window. They can be changed by
 editing the GUI configuration file. See [GUI configuration](../README.md#gui-configuration).
@@ -156,13 +161,16 @@ configuration used by the application.
 ![Parameters tab](assets/screenshots/06-parameters-tab.png)
 
 The editor shows the active JSON configuration. It is intended for advanced
-users and maintainers who need to change URLs, loader choices, image names,
+users and maintainers who need to change URLs, loader choices, image choices,
+image names,
 timeouts, update behavior, or local command settings.
 
 Available actions:
 
 - **Load external file:** reads a JSON file from your computer and replaces the
-  editor contents. The configuration is not used until you click **Apply**.
+  editor contents. If the file was created by an older release, the application
+  shows a conversion message and updates the JSON to the current format before
+  displaying it. The configuration is not used until you click **Apply**.
 - **Export file:** saves a copy of the JSON currently shown in the editor.
 - **Reset:** restores the packaged default configuration after confirmation.
 - **Apply:** validates the JSON, saves it as the user configuration, and applies
@@ -252,10 +260,10 @@ working directory, the Electron user data directory, or the path configured by:
 RKDEVELOPTOOL_GUI_CONFIG=/path/to/rkdeveloptool-gui.config.json
 ```
 
-Configurable values include the GitHub release page, GitHub API URL, loader
-URL, image URL, asset names, image LBA, online user guide URL, and network
-timeouts. Application self-update checks can also be configured or disabled
-with the `autoUpdate` section. The delay between consecutive `rkdeveloptool`
+Configurable values include the configuration release version, GitHub release
+page, GitHub API URL, loader URL, image URL, asset names, image LBA, online user
+guide URL, and network timeouts. Application self-update checks can also be
+configured or disabled with the `autoUpdate` section. The delay between consecutive `rkdeveloptool`
 commands is configurable with `rkdeveloptoolCommandDelayMs`; the default is
 2000 ms so the USB device has time to settle between operations.
 
@@ -291,6 +299,7 @@ default parameter.
 
 | Parameter | Type | Unit | Default | Description |
 | --- | --- | --- | --- | --- |
+| `releaseVersion` | string | Release version | `0.1.7` | Configuration format version used to migrate imported parameter files from older releases. |
 | `rkdeveloptoolPath` | string | File path | `""` | Optional explicit path to `rkdeveloptool` or `rkdeveloptool.exe`. Leave empty to let the application search packaged resources, the development bundle, the repository root, then `PATH`. |
 | `commandPrefix` | string array | Command arguments | `[]` | Optional privilege wrapper placed before `rkdeveloptool`. Supported wrappers are `sudo`, `pkexec`, and `doas`; only safe non-interactive arguments such as `-n` are accepted where supported. The default empty array runs `rkdeveloptool` directly. |
 | `releasePageUrl` | string | URL | `https://github.com/OpenIPC/sbc-groundstations/releases/tag/buildroot-snapshot` | Human-readable firmware release page. It is used as a fallback source for the GitHub API URL and is shown in diagnostics. |
@@ -314,7 +323,12 @@ default parameter.
 | `loader.choices[].assetName` | string | File name | `rk356x_spl_loader_ddr1056_v1.10.111.bin`, `rk356x_spl_loader_ddr1056_v1.12.109_no_check_todly.bin` | File name used for the downloaded loader choice and cache entry. |
 | `loader.choices[].url` | string | URL | See default `loader.choices` entries in the JSON example above. | Direct download URL for this loader choice. |
 | `image.assetName` | string | File name | `runcam_wifilink_sdcard.img` | Online image file name expected in the firmware release. |
-| `image.url` | string | URL | `https://github.com/OpenIPC/sbc-groundstations/releases/download/buildroot-snapshot/runcam_wifilink_sdcard.img` | Direct download URL for the complete OpenIPC image. |
+| `image.url` | string | URL | `https://github.com/krl91/sbc-groundstations/releases/download/runcam-wifilink-gsmenu-fix-2026-05-23/runcam_wifilink_sdcard.img` | Default direct download URL for the complete RunCam WiFiLink image. |
+| `image.choices` | array | Image list | GS menu fix and OpenIPC buildroot snapshot entries | List of online image choices displayed in the **Image version** dropdown. |
+| `image.choices[].id` | string | Identifier | `runcam-wifilink-gsmenu-fix-2026-05-23`, `openipc-buildroot-snapshot` | Stable internal identifier for an image choice. It should be unique within `image.choices`. |
+| `image.choices[].label` | string | Display text | `RunCam WiFiLink GS menu fix 2026-05-23`, `OpenIPC buildroot snapshot` | User-facing image name shown in the dropdown and confirmation dialog. |
+| `image.choices[].assetName` | string | File name | `runcam_wifilink_sdcard.img` | File name used for the downloaded image choice and cache entry. |
+| `image.choices[].url` | string | URL | See default `image.choices` entries in the JSON example above. | Direct download URL for this image choice. |
 | `image.lba` | number | LBA sector offset | `0` | Start address passed to `rkdeveloptool wl`. The default is for complete `*_sdcard.img` images. |
 
 Notes:

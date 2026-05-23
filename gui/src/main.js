@@ -11,6 +11,7 @@ const {
   describeUpdatePlan,
   isSafeExternalUrl,
   loadConfigFilesWithSources,
+  migrateConfig,
   normalizeLocalPath,
   normalizeFileKind,
   normalizeTimeoutMs,
@@ -100,6 +101,24 @@ function parseEditableConfig(jsonText) {
     throw new Error('Invalid JSON configuration: the root value must be an object.');
   }
   return config;
+}
+
+function migrateEditableConfig(config) {
+  return migrateConfig(config, loadDefaultConfig());
+}
+
+async function showConfigMigrationMessage(migration) {
+  if (!migration) return;
+  await dialog.showMessageBox(mainWindow, {
+    type: 'info',
+    buttons: ['OK'],
+    title: 'Parameters converted',
+    message: `The imported parameters will be converted from release version ${migration.fromReleaseVersion}.`,
+    detail: [
+      `Target release version: ${migration.toReleaseVersion}`,
+      `Updated fields: ${migration.changes.join(', ')}`
+    ].join('\n')
+  });
 }
 
 function formatConfigJson(config) {
@@ -325,13 +344,13 @@ async function resolveOnlineAsset(kind) {
   };
 }
 
-function configuredLoaderChoice(choiceId) {
-  const choices = Array.isArray(appState.config?.loader?.choices) ? appState.config.loader.choices : [];
+function configuredChoice(kind, choiceId) {
+  const choices = Array.isArray(appState.config?.[kind]?.choices) ? appState.config[kind].choices : [];
   return choices.find((choice) => choice.id === choiceId) || null;
 }
 
 async function resolveLoaderAsset(options = {}) {
-  const choice = configuredLoaderChoice(options.loaderChoiceId);
+  const choice = configuredChoice('loader', options.loaderChoiceId);
   if (!choice) {
     return resolveOnlineAsset('loader');
   }
@@ -345,8 +364,27 @@ async function resolveLoaderAsset(options = {}) {
   };
 }
 
+async function resolveImageAsset(options = {}) {
+  const choice = configuredChoice('image', options.imageChoiceId);
+  if (!choice) {
+    return resolveOnlineAsset('image');
+  }
+  if (!isSafeExternalUrl(choice.url)) {
+    throw new Error(`Invalid image URL for ${choice.label || choice.id}.`);
+  }
+  return {
+    name: choice.assetName || path.basename(new URL(choice.url).pathname),
+    url: choice.url,
+    sha256: choice.sha256 || ''
+  };
+}
+
 async function prepareOnlineLoader(options = {}) {
   return downloadAndVerify(await resolveLoaderAsset(options), options.progressOptions);
+}
+
+async function prepareOnlineImage(options = {}) {
+  return downloadAndVerify(await resolveImageAsset(options), options.progressOptions);
 }
 
 async function simulateDownloadAndVerify(asset, progressOptions) {
@@ -534,6 +572,13 @@ async function prepareLoader(options) {
   return prepareFile('loader', 'local', options.path);
 }
 
+async function prepareImage(options) {
+  if (options.source === 'online') {
+    return prepareOnlineImage(options);
+  }
+  return prepareFile('image', 'local', options.path);
+}
+
 async function writeLoader(loaderPath, progressOptions, message = 'Loading Maskrom loader...') {
   await ensureDeviceBeforeFlash('loader');
   emit('status', { message });
@@ -624,7 +669,12 @@ async function runUpdate(options) {
         }
 
         const imageProgress = splitProgressForSource(progressOptions, options.imageSource);
-        const imagePath = await prepareFile('image', options.imageSource, options.imagePath, imageProgress.download);
+        const imagePath = await prepareImage({
+          source: options.imageSource,
+          path: options.imagePath,
+          imageChoiceId: options.imageChoiceId,
+          progressOptions: imageProgress.download
+        });
         emit('status', { message: 'Writing image...' });
         setOperationFlag('flashBusy', true);
         emit('flash-busy', { value: true });
@@ -849,11 +899,14 @@ ipcMain.handle('app:loadExternalConfigFile', async () => {
   }
 
   const filePath = result.filePaths[0];
-  const config = parseEditableConfig(fs.readFileSync(filePath, 'utf8'));
+  const parsedConfig = parseEditableConfig(fs.readFileSync(filePath, 'utf8'));
+  const { config, migration } = migrateEditableConfig(parsedConfig);
+  await showConfigMigrationMessage(migration);
   return {
     canceled: false,
     filePath,
-    json: formatConfigJson(config)
+    json: formatConfigJson(config),
+    migration
   };
 });
 
@@ -877,13 +930,15 @@ ipcMain.handle('app:applyConfig', async (_event, jsonText) => {
   if (appState.busy) {
     throw new Error('Cannot apply configuration while another operation is running.');
   }
-  const config = parseEditableConfig(jsonText);
+  const parsedConfig = parseEditableConfig(jsonText);
+  const { config, migration } = migrateEditableConfig(parsedConfig);
   const filePath = applyConfigObject(config);
   announceConfigSources();
   return {
     ok: true,
     filePath,
     json: formatConfigJson(appState.config),
+    migration,
     ...configStatePayload()
   };
 });
@@ -957,6 +1012,9 @@ ipcMain.handle('app:confirmUpdate', async (_event, options) => {
       'The Maskrom loader is loaded before writing the complete image.',
       ...(normalizedOptions.loaderSource === 'online' && normalizedOptions.loaderChoiceLabel
         ? [`Selected Maskrom loader: ${normalizedOptions.loaderChoiceLabel}`]
+        : []),
+      ...(normalizedOptions.imageSource === 'online' && normalizedOptions.imageChoiceLabel
+        ? [`Selected image: ${normalizedOptions.imageChoiceLabel}`]
         : []),
       `Release API host: ${sources.releaseApiHost || 'not configured'}`,
       `Maskrom loader host: ${sources.loaderHost || 'not configured'}`,

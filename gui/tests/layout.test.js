@@ -62,6 +62,15 @@ test('loader card exposes preset loader choices plus manual local mode', () => {
   assert.match(renderer, /option\.dataset\.url = choice\.url/);
 });
 
+test('image card exposes preset image choices plus local mode', () => {
+  assert.match(html, /id="imageChoice"/);
+  assert.match(html, /<label class="field-label" for="imageChoice">Image version<\/label>/);
+  assert.match(renderer, /imageChoiceId: elements\.imageChoice\.value/);
+  assert.match(renderer, /imageChoiceLabel: elements\.imageChoice\.selectedOptions\[0\]\?\.textContent/);
+  assert.match(renderer, /state\.config\.image\.choices/);
+  assert.match(renderer, /elements\.imageUrl\.textContent = elements\.imageChoice\.selectedOptions\[0\]\?\.dataset\.url \|\| state\.config\.image\.url/);
+});
+
 test('renderer document declares a restrictive content security policy', () => {
   assert.match(html, /http-equiv="Content-Security-Policy"/);
   assert.match(html, /default-src 'self'/);
@@ -119,6 +128,9 @@ test('parameters view exposes JSON import export and apply actions', () => {
 
 test('main process validates imports and saves applied or reset JSON as user configuration', () => {
   assert.match(main, /function parseEditableConfig\(jsonText\)/);
+  assert.match(main, /function migrateEditableConfig\(config\)/);
+  assert.match(main, /Parameters converted/);
+  assert.match(main, /The imported parameters will be converted from release version/);
   assert.match(main, /Invalid JSON configuration/);
   assert.match(main, /function loadDefaultConfig\(\)/);
   assert.match(main, /function userConfigPath\(\)[\s\S]*rkdeveloptool-gui\.config\.json/);
@@ -176,7 +188,7 @@ test('try-again transition stays active until the main window is ready', () => {
 
 test('main process checks the USB device immediately before each flash command', () => {
   assert.match(main, /async function writeLoader\(loaderPath[\s\S]*await ensureDeviceBeforeFlash\('loader'\);[\s\S]*await runTool\(\['db', loaderPath\]/);
-  assert.match(main, /let device = await ensureDeviceBeforeFlash\('image'\);[\s\S]*const imagePath = await prepareFile\('image'[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\]/);
+  assert.match(main, /let device = await ensureDeviceBeforeFlash\('image'\);[\s\S]*const imagePath = await prepareImage\([\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\]/);
   assert.match(renderer, /if \(event\.type === 'device'\)[\s\S]*updateDeviceLine\(event\.device\);/);
 });
 
@@ -298,7 +310,7 @@ test('main process assigns one progress range per selected flash step', () => {
   assert.match(main, /phaseProgressRange\(\s*index,\s*plan\.length,/);
   assert.match(main, /emitPhaseProgress\(progressOptions, 0\);/);
   assert.match(main, /const loaderProgress = splitProgressForSource\(progressOptions, options\.loaderSource\);[\s\S]*progressOptions: loaderProgress\.download[\s\S]*await writeLoader\(loaderPath, loaderProgress\.flash\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
-  assert.match(main, /const imageProgress = splitProgressForSource\(progressOptions, options\.imageSource\);[\s\S]*prepareFile\('image', options\.imageSource, options\.imagePath, imageProgress\.download\)[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], imageProgress\.flash\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
+  assert.match(main, /const imageProgress = splitProgressForSource\(progressOptions, options\.imageSource\);[\s\S]*prepareImage\(\{[\s\S]*imageChoiceId: options\.imageChoiceId[\s\S]*await runTool\(\['wl', String\(appState\.config\.image\.lba \?\? 0\), imagePath\], imageProgress\.flash\);[\s\S]*emitPhaseProgress\(progressOptions, 100\);/);
   assert.match(main, /downloadAndVerify\(asset, progressOptions\)/);
   assert.match(main, /emitPhaseProgress\(progressOptions, Math\.floor\(\(received \/ total\) \* 100\), `Downloading \$\{asset\.name\}`\)/);
 });
