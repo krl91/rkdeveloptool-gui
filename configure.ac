@@ -46,6 +46,9 @@ case "$host_os" in
 		CPPFLAGS="$CFLAGS -I/usr/local/include"
 		LDFLAGS="$LDFLAGS -L/usr/local/lib"
 		;;
+	mingw*|msys*)
+		CXXFLAGS="$CXXFLAGS -Wno-unused-variable"
+		;;
 	*)
 		;;
 esac
