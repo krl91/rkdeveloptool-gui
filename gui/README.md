@@ -54,6 +54,17 @@ Integration tests use `tests/fixtures/mock-rkdeveloptool.js` to validate the
 GUI process runner against a controlled `rkdeveloptool` replacement without
 touching real USB hardware.
 
+The repository root also contains C++ unit tests for deterministic
+`rkdeveloptool` parser/helper logic:
+
+```bash
+make cxx-test
+make check
+```
+
+`make check` is the standard Autotools entry point and runs the C++ unit tests.
+It does not require a Rockusb device.
+
 ## Architecture
 
 - `src/main.js`: Electron main process, device detection, downloads, SHA256
@@ -142,9 +153,20 @@ autoreconf -i
 make -j$(nproc)
 ```
 
-On macOS, use `make -j$(sysctl -n hw.ncpu)` if `nproc` is not available.
+On macOS, install Homebrew GCC and configure with GNU `g++`, because the
+upstream C++ sources are not intended to be built with Apple Clang:
+
+```bash
+brew install automake autoconf libusb pkg-config gcc node
+autoreconf -i
+CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone --enable-gui
+make -j$(sysctl -n hw.ncpu)
+```
+
 Without `--enable-gui`, the normal `make` only builds `rkdeveloptool`; use
-`make gui` from the repository root to package the GUI manually.
+`make gui` from the repository root to package the GUI manually. `make gui`
+depends on `rkdeveloptool`, so it recompiles the C++ incrementally when source
+files are newer than the existing objects or binary.
 
 The packaging script copies `../rkdeveloptool` or `../rkdeveloptool.exe` into
 `gui/bin/` automatically. `electron-builder` then embeds it in the application
@@ -206,13 +228,13 @@ Install Homebrew first if the `brew` command is not available:
 https://brew.sh/
 
 ```bash
-brew install automake autoconf libusb pkg-config git wget node
+brew install automake autoconf libusb pkg-config git wget gcc node
 
 git clone https://github.com/krl91/rkdeveloptool-gui.git
 cd rkdeveloptool-gui
 
 autoreconf -i
-./configure --enable-standalone
+CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone
 make -j$(sysctl -n hw.ncpu)
 
 cd gui

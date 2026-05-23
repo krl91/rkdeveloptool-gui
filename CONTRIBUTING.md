@@ -12,9 +12,13 @@ autoreconf -i
 make -j$(nproc)
 ```
 
-On macOS, use:
+On macOS, install Homebrew GCC and configure with GNU `g++`. Apple Clang is not
+the supported compiler for the upstream C++ sources:
 
 ```bash
+brew install automake autoconf libusb pkg-config gcc node
+autoreconf -i
+CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone
 make -j$(sysctl -n hw.ncpu)
 ```
 
@@ -32,10 +36,14 @@ Run these checks before submitting changes:
 
 ```bash
 make
+make check
 make gui-test
 ```
 
-For GUI-only changes, this is equivalent:
+`make check` runs the C++ unit tests in `tests/cpp/`. They cover deterministic
+parser/helper logic and do not require a Rockusb device.
+
+For GUI-only changes, also run:
 
 ```bash
 cd gui
@@ -47,9 +55,10 @@ npm run coverage
 The GUI integration tests use `gui/tests/fixtures/mock-rkdeveloptool.js`; they
 do not require a Rockusb device and do not flash real hardware.
 
-Pull requests run the same GUI checks through GitHub Actions:
+Pull requests run the same C++ and GUI checks through GitHub Actions:
 
 ```bash
+make check
 make gui-test
 ```
 
@@ -67,6 +76,7 @@ GUI logs, and the copied `gui/bin/rkdeveloptool` binary. It intentionally keeps
 
 - `main.cpp` and `RK*.cpp`: command-line tool and Rockusb logic.
 - `configure.ac` and `Makefile.am`: Autotools build configuration.
+- `tests/cpp/`: C++ unit tests for deterministic rkdeveloptool helpers.
 - `gui/src/main.js`: Electron main process, device detection, downloads, and flashing workflow.
 - `gui/src/renderer.js`: browser-side UI behavior.
 - `gui/src/lib.js`: deterministic helpers covered by unit tests.
@@ -111,11 +121,11 @@ notarized DMG:
 - `APPLE_API_ISSUER`: App Store Connect issuer ID.
 
 When the secrets are present, the workflow writes the `.p8` key to the runner,
-builds `rkdeveloptool`, runs `npm run dist:mac`, uploads the signed/notarized
-DMG as a workflow artifact, and attaches the DMG to the matching GitHub release.
-When the secrets are absent, the same command produces an ad hoc signed DMG and
-still uploads it. For manual runs, set the `tag_name` input to the release tag
-to update, for example `v0.1.3`.
+builds `rkdeveloptool` with Homebrew GCC, runs `npm run dist:mac`, uploads the
+signed/notarized DMG as a workflow artifact, and attaches the DMG to the
+matching GitHub release. When the secrets are absent, the same command produces
+an ad hoc signed DMG and still uploads it. For manual runs, set the `tag_name`
+input to the release tag to update, for example `v0.1.3`.
 
 The Electron macOS build uses hardened runtime and the entitlements in
 `gui/build/entitlements.mac.plist` and

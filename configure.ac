@@ -9,6 +9,19 @@ AM_CONFIG_HEADER(cfg/config.h)
 
 SUBDIRS=""
 
+AC_CANONICAL_HOST
+case "$host_os" in
+	darwin*)
+		AC_CHECK_PROGS([CXX], [g++-15 g++-14 g++-13 g++-12 g++], [])
+		AS_IF([test -z "$CXX"], [
+			AC_MSG_ERROR([GNU g++ is required on macOS. Install it with: brew install gcc])
+		])
+		AS_IF([$CXX --version 2>/dev/null | grep -qi clang], [
+			AC_MSG_ERROR([Apple Clang cannot build upstream rkdeveloptool. Install GCC and rerun configure with CXX=/opt/homebrew/bin/g++-15])
+		])
+		;;
+esac
+
 AC_PROG_CPP
 AC_PROG_CXX
 AC_PROG_CXXCPP
@@ -24,8 +37,6 @@ AC_ARG_ENABLE([standalone],
 AC_ARG_ENABLE([gui],
 	AS_HELP_STRING([--enable-gui],
 		[build the Electron GUI package when running make]))
-
-AC_CANONICAL_HOST
 case "$host_os" in
 	freebsd*)
 		CPPFLAGS="$CFLAGS -I/usr/local/include"

@@ -41,5 +41,8 @@ jobs:
           autoreconf -i
           ./configure
 
+      - name: Run C++ unit tests
+        run: make check
+
       - name: Run GUI automatic tests
         run: make gui-test

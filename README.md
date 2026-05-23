@@ -63,11 +63,11 @@ macOS:
 	Install Homebrew first if the brew command is not available:
 	https://brew.sh/
 
-	brew install automake autoconf libusb pkg-config git wget
+	brew install automake autoconf libusb pkg-config git wget gcc
 	git clone https://github.com/krl91/rkdeveloptool-gui.git
 	cd rkdeveloptool-gui
 	autoreconf -i
-	./configure --enable-standalone
+	CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone
 	make -j$(sysctl -n hw.ncpu)
 
 Linux Debian/Ubuntu:
@@ -126,11 +126,11 @@ macOS:
 	Install Homebrew first if the brew command is not available:
 	https://brew.sh/
 
-	brew install automake autoconf libusb pkg-config git wget node
+	brew install automake autoconf libusb pkg-config git wget gcc node
 	git clone https://github.com/krl91/rkdeveloptool-gui.git
 	cd rkdeveloptool-gui
 	autoreconf -i
-	./configure --enable-standalone
+	CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone
 	make -j$(sysctl -n hw.ncpu)
 	cd gui
 	npm install
@@ -139,7 +139,7 @@ macOS:
 Or build the command-line tool and the GUI package with one make command:
 
 	autoreconf -i
-	./configure --enable-standalone --enable-gui
+	CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone --enable-gui
 	make -j$(sysctl -n hw.ncpu)
 
 Linux Debian/Ubuntu:
@@ -224,6 +224,12 @@ Useful GUI make targets:
 	make gui-test
 		Run the GUI automatic tests.
 
+	make cxx-test
+		Build and run the C++ unit tests.
+
+	make check
+		Run the standard Autotools checks, including the C++ unit tests.
+
 	make gui-clean
 		Remove GUI build outputs and copied rkdeveloptool binaries.
 
@@ -231,11 +237,12 @@ Useful GUI make targets:
 		Remove command-line build outputs, logs, GUI build outputs, and copied
 		GUI rkdeveloptool binaries. It keeps gui/node_modules/ intact.
 
-GitHub Actions runs make gui-test on pull requests. Release workflows build
-packages on tag pushes:
+GitHub Actions runs make check and make gui-test on pull requests. Release
+workflows build packages on tag pushes:
 
 	macOS Release
-		Builds a DMG. When Apple signing secrets are configured, the DMG is
+		Builds rkdeveloptool with Homebrew GCC instead of Apple Clang, then
+		builds a DMG. When Apple signing secrets are configured, the DMG is
 		signed and notarized. Without those secrets, the workflow still builds
 		an ad hoc signed DMG, but macOS may show a security warning on first
 		launch.
@@ -256,11 +263,17 @@ The automatic test procedure is documented in the next section.
 Automatic Tests
 ---------------
 
-The automatic tests are in the gui/tests/ directory and can be run without a
-Rockusb device connected. They use a mock rkdeveloptool for integration tests,
-so no real hardware is flashed.
+The C++ unit tests are in tests/cpp/ and cover deterministic parser and helper
+logic from rkdeveloptool. The GUI automatic tests are in gui/tests/. Both can
+be run without a Rockusb device connected; the GUI integration tests use a mock
+rkdeveloptool, so no real hardware is flashed.
 
 From the repository root:
+
+	make check
+	make gui-test
+
+Or run only the GUI tests manually:
 
 	cd gui
 	npm install
@@ -273,13 +286,21 @@ The commands do the following:
 	npm run check
 		Check JavaScript syntax for the GUI sources, scripts, and tests.
 
+	make cxx-test
+		Build and run the C++ unit tests.
+
+	make check
+		Run the standard Autotools checks, including make cxx-test.
+
 	npm test
 		Run the unit and integration tests with Node.js built-in test runner.
 
 	npm run coverage
 		Run the same tests and print the coverage report.
 
-The tests cover configuration loading, rkdeveloptool output parsing, binary
+The C++ tests cover configuration parsing, partition and UUID parsing,
+parameter lookup, item splitting, CRC32, and supported-device checks. The GUI
+tests cover configuration loading, rkdeveloptool output parsing, binary
 discovery, SHA256 helpers, update ordering, simulation mode, mock integration
 with rkdeveloptool, reboot handling, and GUI layout regressions.
 
@@ -389,8 +410,9 @@ Windows:
 
 macOS:
 
-	Use a build linked against the local libusb package, preferably via
-	--enable-standalone as shown above.
+	Use a build linked against the local libusb package and built with GNU GCC,
+	preferably via --enable-standalone as shown above. Apple Clang is not the
+	supported compiler for the upstream C++ sources.
 
 
 Command-Line Usage
@@ -430,7 +452,12 @@ Debian/Ubuntu:
 
 macOS:
 
-	brew install pkg-config libusb
+	brew install pkg-config libusb gcc
+
+	If configure reports that Apple Clang cannot build upstream rkdeveloptool,
+	install Homebrew GCC and run configure with the GNU C++ compiler:
+
+		CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone
 
 Windows/MSYS2:
 

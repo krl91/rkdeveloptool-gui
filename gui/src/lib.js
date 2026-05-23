@@ -4,7 +4,7 @@ const path = require('node:path');
 
 const VALID_FILE_KINDS = new Set(['loader', 'image']);
 const VALID_SOURCES = new Set(['online', 'local']);
-const CURRENT_CONFIG_RELEASE_VERSION = '0.1.7';
+const CURRENT_CONFIG_RELEASE_VERSION = '0.1.8';
 const ALLOWED_COMMAND_PREFIXES = {
   sudo: new Set(['-n']),
   pkexec: new Set(),

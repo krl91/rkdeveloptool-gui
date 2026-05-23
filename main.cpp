@@ -2559,7 +2559,7 @@ bool read_lba(STRUCT_RKDEVICE_DESC &dev, UINT uiBegin, UINT uiLen, char *szFile)
 	bool bRet, bFirst = true, bSuccess = false;
 	int iRet;
 	UINT iTotalRead = 0,iRead = 0;
-	const int nSectorSize = 512;
+	int nSectorSize = 512;
 	BYTE pBuf[nSectorSize * DEFAULT_RW_LBA];
 	pComm =  new CRKUsbComm(dev, g_pLogObject, bRet);
 	if (bRet) {
@@ -2931,7 +2931,7 @@ bool write_lba(STRUCT_RKDEVICE_DESC &dev, UINT uiBegin, char *szFile)
 	long long iTotalWrite = 0, iFileSize = 0;
 	UINT iWrite = 0, iRead = 0;
 	UINT uiLen;
-	const int nSectorSize = 512;
+	int nSectorSize = 512;
 	BYTE pBuf[nSectorSize * DEFAULT_RW_LBA];
 	
 
@@ -3357,6 +3357,7 @@ int main(int argc, char* argv[])
 {
 	CRKScan *pScan = NULL;
 	int ret;
+	char szProgramProcPath[100];
 	char szProgramDir[256];
 	string strLogDir,strConfigFile;
 	struct stat statBuf;
@@ -3364,7 +3365,6 @@ int main(int argc, char* argv[])
 	g_ConfigItemVec.clear();
 
 #ifndef __MINGW32__
-	char szProgramProcPath[100];
 	snprintf(szProgramProcPath, sizeof(szProgramProcPath), "/proc/%d/exe", getpid());
 	if (readlink(szProgramProcPath, szProgramDir, 256) == -1)
 		strcpy(szProgramDir, ".");

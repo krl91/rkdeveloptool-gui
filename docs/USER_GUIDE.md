@@ -299,7 +299,7 @@ default parameter.
 
 | Parameter | Type | Unit | Default | Description |
 | --- | --- | --- | --- | --- |
-| `releaseVersion` | string | Release version | `0.1.7` | Configuration format version used to migrate imported parameter files from older releases. |
+| `releaseVersion` | string | Release version | `0.1.8` | Configuration format version used to migrate imported parameter files from older releases. |
 | `rkdeveloptoolPath` | string | File path | `""` | Optional explicit path to `rkdeveloptool` or `rkdeveloptool.exe`. Leave empty to let the application search packaged resources, the development bundle, the repository root, then `PATH`. |
 | `commandPrefix` | string array | Command arguments | `[]` | Optional privilege wrapper placed before `rkdeveloptool`. Supported wrappers are `sudo`, `pkexec`, and `doas`; only safe non-interactive arguments such as `-n` are accepted where supported. The default empty array runs `rkdeveloptool` directly. |
 | `releasePageUrl` | string | URL | `https://github.com/OpenIPC/sbc-groundstations/releases/tag/buildroot-snapshot` | Human-readable firmware release page. It is used as a fallback source for the GitHub API URL and is shown in diagnostics. |

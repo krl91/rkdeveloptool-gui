@@ -14,3 +14,6 @@ configure
 rkdeveloptool
 rkdeveloptool.exe
 rkdeveloptool*bz2
+tests/cpp/unit_tests
+tests/cpp/unit_tests.exe
+tests/cpp/*.dSYM/

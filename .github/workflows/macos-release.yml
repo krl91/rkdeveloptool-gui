@@ -65,12 +65,12 @@ jobs:
           echo "APPLE_API_KEY=$key_path" >> "$GITHUB_ENV"
 
       - name: Install system dependencies
-        run: brew install automake autoconf libusb pkg-config
+        run: brew install automake autoconf libusb pkg-config gcc
 
       - name: Build rkdeveloptool
         run: |
           autoreconf -i
-          ./configure --enable-standalone
+          CXX="$(brew --prefix)/bin/g++-15" ./configure --enable-standalone
           make -j"$(sysctl -n hw.ncpu)"
 
       - name: Install GUI dependencies

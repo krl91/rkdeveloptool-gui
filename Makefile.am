@@ -18,16 +18,33 @@ rkdeveloptool_SOURCES = main.cpp \
 rkdeveloptool_LDADD = $(LIBUSB1_LIBS)
 
 GUI_BINARY = gui/bin/rkdeveloptool$(EXEEXT)
+CXX_TEST_BINARY = tests/cpp/unit_tests$(EXEEXT)
+CXX_TEST_OBJECTS = crc.$(OBJEXT) \
+	RKBoot.$(OBJEXT) \
+	RKComm.$(OBJEXT) \
+	RKDevice.$(OBJEXT) \
+	RKImage.$(OBJEXT) \
+	RKLog.$(OBJEXT) \
+	RKScan.$(OBJEXT)
 
 if BUILD_GUI
 all-local: gui-dist
 endif
 
-.PHONY: gui gui-package gui-dist gui-dist-dir gui-test gui-clean
+.PHONY: gui gui-package gui-dist gui-dist-dir gui-test gui-clean cxx-test
 
 gui: gui-dist
 
 gui-package: gui-dist
+
+cxx-test: $(CXX_TEST_BINARY)
+	./$(CXX_TEST_BINARY)
+
+$(CXX_TEST_BINARY): tests/cpp/unit_tests.cpp $(CXX_TEST_OBJECTS)
+	$(MKDIR_P) tests/cpp
+	$(CXX) $(DEFS) -I. -I./cfg $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -o $(CXX_TEST_BINARY) tests/cpp/unit_tests.cpp $(CXX_TEST_OBJECTS) $(LIBUSB1_LIBS) $(LIBS)
+
+check-local: cxx-test
 
 $(GUI_BINARY): rkdeveloptool$(EXEEXT)
 	$(MKDIR_P) gui/bin
@@ -53,4 +70,5 @@ gui-clean:
 	-rm -fr gui/dist gui/log gui/bin/rkdeveloptool gui/bin/rkdeveloptool.exe
 
 clean-local:: gui-clean
+	-rm -f $(CXX_TEST_BINARY)
 	rm -fr log
